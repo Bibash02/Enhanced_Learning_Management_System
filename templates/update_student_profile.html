@@ -1,0 +1,108 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Update Profile</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: "Times New Roman", serif;
+      background-color: #f4f4f4;
+      margin: 0;
+    }
+    .container {
+      max-width: 700px;
+      margin: 50px auto;
+    }
+    .update-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #343a40;
+    }
+    h4 {
+      margin-top: 20px;
+      margin-bottom: 15px;
+      color: #0d0d10;
+    }
+    form .form-control {
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+    .profile-image-preview {
+      display: block;
+      margin: 10px auto;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #84848b;
+    }
+    .btn-submit {
+      background-color: #050508;
+      color: white;
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 16px;
+      border: none;
+      transition: 0.3s;
+    }
+    .btn-submit:hover {
+      background-color: #4a4950;
+      color: white;
+    }
+    .messages { margin-bottom: 15px; }
+    @media (max-width: 768px) { .container { margin: 20px auto; padding: 0 15px; } }
+  </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="update-card">
+        <h2>Update Profile</h2>
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- User Info -->
+            <h4>User Info</h4>
+            {{ user_form.as_p }}
+
+            <!-- Profile Image -->
+            <h4>Profile Image</h4>
+            {{ profile_form.as_p }}
+            {% if user.userprofile.image %}
+                <img src="{{ user.userprofile.image.url }}" alt="Profile Image" class="profile-image-preview">
+            {% endif %}
+
+            <!-- <h4>Bio</h4>
+            <textarea name="bio" class="form-control" rows="4">{{ profile_form.instance.bio }}</textarea> -->
+
+            <!-- Password Update -->
+            <h4>Change Password</h4>
+            {{ password_form.as_p }}
+
+            <button type="submit" class="btn-submit mt-3">Update Profile</button><br><br>
+            <a href="{% url 'student_profile' %}" class="btn btn-secondary flex-grow-1 w-100" style="border-radius: 8px;">Cancel</a>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!-- templates/esewa_success.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Payment Successful</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:"Times New Roman", serif; }
+
+    body {
+      background:#f5f7fa;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+    }
+
+    .success-container {
+      background:#ffffff;
+      padding:40px 50px;
+      border-radius:15px;
+      width:450px;
+      box-shadow:0 8px 25px rgba(0,0,0,0.15);
+      text-align:center;
+      animation:fadeIn 0.7s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity:0; transform:translateY(20px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+
+    .success-icon {
+      font-size:60px;
+      color:#10b981;
+      margin-bottom:15px;
+    }
+
+    h2 {
+      color:#10b981;
+      font-size:28px;
+      margin-bottom:10px;
+    }
+
+    p {
+      font-size:16px;
+      color:#444;
+      margin-bottom:10px;
+    }
+
+    .details-box {
+      background:#f0fdf4;
+      padding:15px;
+      border-left:5px solid #10b981;
+      border-radius:8px;
+      margin-top:15px;
+      text-align:left;
+    }
+
+    .details-box p {
+      margin:5px 0;
+      font-size:15px;
+      color:#333;
+    }
+
+    .btn {
+      display:inline-block;
+      margin-top:20px;
+      background:#10b981;
+      padding:12px 25px;
+      color:white;
+      border-radius:5px;
+      font-size:16px;
+      text-decoration:none;
+      transition:0.3s;
+    }
+
+    .btn:hover {
+      background:#0c9463;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="success-container">
+    <div class="success-icon">✔</div>
+
+    <h2>Payment Successful!</h2>
+    <p>Your payment has been completed successfully.</p>
+
+    {% if order %}
+    <div class="details-box">
+      <p><strong>Order ID:</strong> {{ order.id }}</p>
+      <p><strong>Course:</strong> {{ order.course_name }}</p>
+      <p><strong>Amount Paid:</strong> Rs.{{ order.amount }}</p>
+    </div>
+    {% endif %}
+
+    <a href="{% url 'enrolled_course' %}" class="btn">Go to My Courses</a>
+  </div>
+</body>
+</html>
+

@@ -1,0 +1,144 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ user.get_full_name }} | Profile</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: "Times New Roman", serif;
+      background: #f4f4f4;
+      margin: 0;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background: #343a40;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      font-size: 22px;
+      margin-bottom: 30px;
+    }
+
+    .sidebar a {
+      color: #fff;
+      text-decoration: none;
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 5px;
+      display: block;
+      font-weight: 500;
+      transition: background 0.3s ease;
+    }
+
+    .sidebar a:hover {
+      background: #495057;
+    }
+
+    .main-content {
+      margin-left: 270px;
+      padding: 40px;
+    }
+
+    .profile-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .profile-card img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 20px;
+      border: 3px solid #0e0e0f;
+    }
+
+    .profile-card h3 {
+      margin-bottom: 15px;
+    }
+
+    .profile-card p {
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .profile-card .btn {
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .btn {
+        background-color: black;
+        color: white;
+    }
+
+    .btn:hover {
+        background-color: gray;
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        overflow-x: auto;
+      }
+      .sidebar a { margin-right: 10px; }
+      .main-content { margin-left: 0; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>{{ sponsor_name }}'s Panel</h2>
+    <a href="{% url 'sponsor_dashboard' %}" class="active"><i class="fas fa-tachometer-alt"></i>Overview</a>
+    <a href="{% url 'funding_history' %}"><i class="fas fa-history"></i>Funding History</a>
+    <a href="{% url 'fund_student' %}"><i class="fas fa-user-plus"></i>Fund Student</a>
+    <a href="{% url 'fund_course_page' %}"><i class="fas fa-book"></i>Fund Course</a>
+    <a href="{% url 'sponsor_profile' %}"><i class="fas fa-user-circle"></i>Profile</a>
+    <a href="{% url 'signout' %}"><i class="fas fa-sign-out-alt"></i>Logout</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="profile-card">
+      <!-- Student Profile Image -->
+      {% if user.profile.image %}
+        <img src="{{ user.profile.image.url }}" alt="{{ user.get_full_name }}">
+      {% else %}
+        <img src="{% static 'images/pic3.jpg' %}" alt="Default Profile">
+      {% endif %}
+
+      <!-- Student Info -->
+      <h3>{{ user.get_full_name }}</h3>
+      <p><strong>Email:</strong> {{ user.email }}</p>
+
+      <!-- Buttons -->
+      <a href="{% url 'update_sponsor_profile' %}" class="btn">Update Profile</a>
+    </div>
+  </div>
+
+</body>
+</html>

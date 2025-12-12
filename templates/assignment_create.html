@@ -1,0 +1,262 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Assignment</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: "Times New Roman", serif;
+      background: #f4f4f4;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #343a40;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      font-size: 22px;
+      margin-bottom: 30px;
+    }
+
+    .sidebar a {
+      color: white;
+      text-decoration: none;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      display: block;
+      transition: background 0.3s ease;
+    }
+
+    .sidebar a:hover {
+      background: #495057;
+    }
+
+    /* Main content */
+    .main-content {
+      margin-left: 270px;
+      padding: 40px;
+    }
+
+    h1 {
+      font-weight: bold;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      padding: 30px;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      transform: translateY(-3px);
+    }
+
+    .form-label {
+      font-weight: bold;
+    }
+
+    .form-control, .form-select {
+      border-radius: 8px;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+      box-shadow: 0 0 0 3px rgba(0,123,255,0.25);
+    }
+
+    .btn-primary {
+      border-radius: 6px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      transform: scale(1.03);
+    }
+
+    .btn-secondary {
+      border-radius: 6px;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        overflow-x: auto;
+      }
+      .sidebar a { margin-right: 10px; }
+      .main-content { margin-left: 0; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>{{ user.first_name }}'s Panel</h2>
+    <a href="{% url 'instructor_dashboard' %}">Dashboard</a>
+    <a href="{% url 'course_create' %}">Create Course</a>
+    <a href="{% url 'assignment_create' %}">Create Assignment</a>
+    <a href="{% url 'signout' %}">Logout</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <h1>Create New Assignment</h1>
+
+    <div class="card">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        <!-- Select Course -->
+        <div class="mb-3">
+          <label for="id_course" class="form-label">Course</label>
+          {{ form.course }}
+          {% for error in form.course.errors %}
+              <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- Assignment Title -->
+        <div class="mb-3">
+          <label for="id_title" class="form-label">Assignment Title</label>
+          <input type="text" name="title" id="id_title" class="form-control" placeholder="Enter assignment title"
+                 value="{{ form.title.value|default_if_none:'' }}">
+          {% for error in form.title.errors %}
+              <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- Description / Instructions -->
+        <div class="mb-3">
+          <label for="id_description" class="form-label">Description / Instructions</label>
+          <textarea name="description" id="id_description" class="form-control" rows="4" placeholder="Enter assignment instructions">{{ form.description.value|default_if_none:'' }}</textarea>
+          {% for error in form.description.errors %}
+              <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- Due Date -->
+        <div class="mb-3">
+          <label for="id_due_date" class="form-label">Due Date (optional)</label>
+          <input type="datetime-local" name="due_date" id="id_due_date" class="form-control"
+                 value="{{ form.due_date.value|default_if_none:'' }}">
+          <small class="text-muted d-block mt-1">Set a due date for this assignment (optional).</small>
+          {% for error in form.due_date.errors %}
+              <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- Add Questions -->
+        <h4 class="mt-4">Add Questions</h4>
+
+        <!-- Question Type -->
+        <div class="mb-3">
+          <label for="question_type" class="form-label">Question Type</label>
+          <select id="question_type" name="question_type"  class="form-select" onchange="showQuestionForm(this.value)">
+              <option value="">-- Select Type --</option>
+              <option value="true_false">True / False</option>
+              <option value="mcq">Multiple Choice (Quiz)</option>
+              <option value="essay">Essay / Written</option>
+          </select>
+        </div>
+
+        <!-- True/False -->
+        <div id="true_false_form" class="question-form d-none">
+          <div class="mb-3">
+            <label class="form-label">True/False Question</label>
+            <input type="text" name="true_false_question" class="form-control" placeholder="Enter question">
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="true_false_answer" value="True">
+            <label class="form-check-label">True</label>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="radio" name="true_false_answer" value="False">
+            <label class="form-check-label">False</label>
+          </div>
+        </div>
+
+        <!-- Multiple Choice -->
+        <div id="mcq_form" class="question-form d-none">
+          <div class="mb-3">
+            <label class="form-label">MCQ Question</label>
+            <input type="text" name="mcq_question" class="form-control" placeholder="Enter question">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Options</label>
+            <input type="text" name="mcq_option1" class="form-control mb-2" placeholder="Option 1">
+            <input type="text" name="mcq_option2" class="form-control mb-2" placeholder="Option 2">
+            <input type="text" name="mcq_option3" class="form-control mb-2" placeholder="Option 3">
+            <input type="text" name="mcq_option4" class="form-control mb-2" placeholder="Option 4">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Correct Answer</label>
+            <select name="mcq_correct" class="form-select">
+              <option value="1">Option 1</option>
+              <option value="2">Option 2</option>
+              <option value="3">Option 3</option>
+              <option value="4">Option 4</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Essay -->
+        <div id="essay_form" class="question-form d-none">
+          <div class="mb-3">
+            <label class="form-label">Essay Question</label>
+            <input type="text" name="essay_question" class="form-control" placeholder="Enter essay question">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Answer Guidelines (Optional)</label>
+            <textarea name="essay_guidelines" class="form-control" rows="3" placeholder="Provide guidelines if needed"></textarea>
+          </div>
+        </div>
+
+        <!-- Publish -->
+        <div class="form-check mb-4 mt-3">
+          <input type="checkbox" name="is_published" id="id_is_published" class="form-check-input"
+                 {% if form.is_published.value %}checked{% endif %}>
+          <label for="id_is_published" class="form-check-label">Publish Assignment</label>
+        </div>
+
+        <!-- Buttons -->
+        <button type="submit" class="btn btn-primary">Create Assignment</button>
+        <a href="{% url 'instructor_dashboard' %}" class="btn btn-secondary ms-2">Cancel</a>
+
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function showQuestionForm(type) {
+      document.querySelectorAll('.question-form').forEach(el => el.classList.add('d-none'));
+      if (type) {
+        document.getElementById(type + '_form').classList.remove('d-none');
+      }
+    }
+  </script>
+</body>
+</html>

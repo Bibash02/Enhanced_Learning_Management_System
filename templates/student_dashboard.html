@@ -1,0 +1,177 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+        font-family: "Times New Roman", serif;
+        line-height: 1.6;
+        color: #333;
+        background: #f4f4f4;
+        margin: 0;
+    }
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background: #343a40;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      font-size: 22px;
+      margin-bottom: 30px;
+    }
+
+    .sidebar a {
+      color: #fff;
+      text-decoration: none;
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 5px;
+      display: block;
+    }
+
+    .sidebar a:hover {
+      background: #495057;
+    }
+
+    .main-content {
+      margin-left: 270px;
+      padding: 40px;
+    }
+
+    .stat-card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .course-card {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .course-card img {
+      max-height: 180px;
+      object-fit: cover;
+    }
+
+    .list-group-item {
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        overflow-x: auto;
+      }
+      .sidebar a { margin-right: 10px; }
+      .main-content { margin-left: 0; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>{{ user.first_name }}'s Dashboard</h2>
+    <a href="#">Overview</a>
+    <a href="{% url 'course_list' %}">Browse Courses</a>
+    <a href="{% url 'enrolled_course' %}">Enrolled Courses</a>
+    <a href="{% url 'pending_assignments' %}">Pending Assignments</a>
+    <a href="{% url 'completed_courses' %}">Completed Courses</a>
+    <a href="{% url 'student_profile' %}">Profile</a>
+    <a href="{% url 'signout' %}">Logout</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <h1>Welcome, {{ user.first_name }}!</h1>
+
+    <div class="row mb-4 mt-4 g-3">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h3>{{ enrolled_courses_count }}</h3>
+                <p>Enrolled Courses</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h3>{{ completed_courses_count }}</h3>
+                <p>Completed Courses</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h3>{{ pending_assignments_count }}</h3>
+                <p>Pending Assignments</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h3>{{ total_hours_spent }}</h3>
+                <p>Hours Spent Learning</p>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="mt-5">Your Enrolled Courses</h2>
+    <div class="row g-3">
+        {% for enrollment in enrollments %}
+        <div class="col-md-4">
+            <div class="course-card">
+                {% if enrollment.course.thumbnail %}
+                <img src="{{ enrollment.course.thumbnail.url }}" alt="{{ enrollment.course.title }}" class="card-img-top">
+                {% else %}
+                <img src="{% static 'images/pic1.jpg' %}" alt="Default thumbnail" class="card-img-top">
+                {% endif %}
+                <div class="p-3">
+                    <h5>{{ enrollment.course.title }}</h5>
+                    <p>{{ enrollment.course.description|truncatewords:20 }}</p>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p>You are not enrolled in any courses yet. <a href="{% url 'course_list' %}">Browse courses</a></p>
+        {% endfor %}
+    </div>
+
+    <h2 class="mt-5">Pending Assignments</h2>
+    {% if pending_assignments_count > 0 %}
+    <ul class="list-group mb-4">
+        {% for assignment in pending_assignments %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ assignment.title }}</strong> 
+                <small class="text-muted">({{ assignment.course.title }})</small><br>
+                Due: {{ assignment.due_date|date:"M d, Y" }}
+            </div>
+            <a href="{% url 'view_assignment' assignment.id %}" class="btn btn-sm btn-warning">View</a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No pending assignments. Great job!</p>
+    {% endif %}
+  </div>
+
+</body>
+</html>

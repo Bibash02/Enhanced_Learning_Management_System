@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Module</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f5f6fa;
+            font-family: 'Times New Roman', sans-serif;
+        }
+        .container {
+            max-width: 700px;
+            margin-top: 60px;
+            background: #fff;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
+        }
+        h2 {
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        label {
+            font-weight: 500;
+            color: #444;
+        }
+        input[type="text"],
+        textarea,
+        input[type="number"] {
+            width: 100%;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 5px;
+            font-size: 15px;
+            transition: 0.2s;
+        }
+        textarea {
+            min-height: 100px;
+        }
+        input:focus, textarea:focus {
+            border-color: #101012;
+            outline: none;
+            box-shadow: 0 0 5px rgba(13,110,253,0.2);
+        }
+        .btn-success {
+            background-color: #121413;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+        .btn-success:hover {
+            background-color: #7d817f;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .btn-secondary:hover {
+            background-color: #565e64;
+        }
+        .text-danger.small {
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Add Module for "{{ course.title }}"</h2>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <!-- Module Title -->
+            <div class="mb-3">
+                <label for="id_title" class="form-label">Module Title</label>
+                <input type="text" name="title" id="id_title" placeholder="Enter module title" required>
+                {% for error in form.title.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Module Description -->
+            <div class="mb-3">
+                <label for="id_description" class="form-label">Description</label>
+                <textarea name="description" id="id_description" placeholder="Write a brief description..."></textarea>
+                {% for error in form.description.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Module Order -->
+            <div class="mb-3">
+                <label for="id_order" class="form-label">Order (optional)</label>
+                <input type="number" name="order" id="id_order" min="0" placeholder="e.g., 1 for first module">
+                {% for error in form.order.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Buttons -->
+            <div class="d-flex justify-content-start">
+                <button type="submit" class="btn btn-success me-2">Add Module</button>
+                <a href="{% url 'instructor_dashboard' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+{% load static %}
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ course.title }} | Learn</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    body { font-family: "Times New Roman", Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(to bottom, #f4f4f4, #e9ecef); margin:0; min-height:100vh; }
+    .sidebar { background-color:#fff; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.08); padding:20px; height:calc(100vh-90px); overflow-y:auto; position:sticky; top:80px; }
+    .sidebar h5 { font-weight:600; text-align:center; margin-bottom:12px; }
+    .module-title { font-weight:600; margin-top:12px; display:flex; justify-content:space-between; align-items:center; }
+    .lesson-link { display:block; padding:8px 12px; border-radius:6px; color:#0c0b0b; text-decoration:none; font-size:15px; margin-bottom:6px; transition: all 0.2s ease; }
+    .lesson-link:hover, .lesson-link.active { background-color:#e7f1ff; font-weight:500; transform:translateX(6px); color:#000; }
+    .lesson-badge { font-size:11px; padding:3px 7px; border-radius:999px; margin-left:8px; }
+    .lesson-status-notstarted { background:#f1f5f9; color:#475569; }
+    .lesson-status-inprogress { background:#fff4e6; color:#92400e; }
+    .lesson-status-completed { background:#d1fae5; color:#065f46; }
+    .content-card { background-color:#fff; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.08); padding:22px; min-height:60vh; transition: transform 0.2s ease; }
+    @media (max-width:992px) { .sidebar { position:relative; height:auto; margin-bottom:16px; top:auto; } .content-card { padding:18px; } }
+  </style>
+</head>
+<body>
+<div class="container-fluid py-4">
+  <div class="row gx-4">
+
+    <!-- Sidebar -->
+    <div class="col-lg-3 mb-4">
+      <div class="sidebar">
+        <h5>{{ course.title }}</h5>
+
+        {% for module in modules %}
+        <div class="mb-3">
+          <div class="module-title">
+            <span><i class="fa-solid fa-folder-open me-2"></i>{{ module.title }}</span>
+            <small class="text-muted">{{ module.module_lessons.count }} lesson{% if module.module_lessons.count != 1 %}s{% endif %}</small>
+          </div>
+
+          <ul class="list-unstyled mt-2 mb-0">
+            {% for lesson in module.module_lessons.all %}
+            <li>
+              <a href="{% url 'lesson_detail' lesson.id %}" class="lesson-link {% if selected_lesson and selected_lesson.id == lesson.id %}active{% endif %}">
+                <i class="fa-regular fa-circle-play me-2"></i>{{ lesson.title }}
+
+                {% if progress_map|dict_key:lesson.id == 'Completed' %}
+                  <span class="lesson-badge lesson-status-completed">Completed</span>
+                {% elif progress_map|dict_key:lesson.id == 'In Progress' %}
+                  <span class="lesson-badge lesson-status-inprogress">In Progress</span>
+                {% else %}
+                  <span class="lesson-badge lesson-status-notstarted">Not Started</span>
+                {% endif %}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% empty %}
+        <p class="text-muted small text-center">No modules available.</p>
+        {% endfor %}
+
+        <hr>
+        <!-- Instructor Info -->
+        <div class="d-flex align-items-center small mb-3">
+          {% if course.instructor.profile_image %}
+            <img src="{{ course.instructor.profile_image.url }}" width="40" height="40" class="rounded-circle me-2">
+          {% else %}
+            <img src="{% static 'images/pic1.jpg' %}" width="40" height="40" class="rounded-circle me-2">
+          {% endif %}
+          <div>
+            <strong>{{ course.instructor.get_full_name }}</strong><br>
+            <span class="text-muted">{{ course.instructor.email }}</span>
+          </div>
+        </div>
+
+        <a href="{% url 'student_dashboard' %}" class="btn btn-dark w-100"><i class="fa-solid fa-arrow-left me-2"></i>Back to Dashboard</a>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-lg-9">
+      <!-- Progress Bar -->
+      <div class="mb-3">
+        <label class="fw-semibold">Course Progress: {{ progress_percent }}%</label>
+        <div class="progress" style="height:12px;">
+          <div class="progress-bar bg-success" role="progressbar" style="width:{{ progress_percent }}%;"></div>
+        </div>
+      </div>
+
+      <div class="content-card">
+        {% if selected_lesson %}
+          <h4 class="fw-bold">{{ selected_lesson.title }}</h4>
+
+          {% if selected_lesson.video %}
+          <div class="mb-3">
+            <video id="lessonVideo" controls width="100%" class="rounded">
+              <source src="{{ selected_lesson.video.url }}" type="video/mp4">
+            </video>
+          </div>
+          {% endif %}
+
+          {% if selected_lesson.pdf_material %}
+          <a href="{{ selected_lesson.pdf_material.url }}" target="_blank" class="btn btn-outline-primary mb-3">
+            <i class="fa-regular fa-file-pdf me-2"></i>View PDF / Download
+          </a>
+          {% endif %}
+
+          <div class="mt-3">{{ selected_lesson.content|safe }}</div>
+
+          <!-- Mark Completed Button (fallback) -->
+          {% if selected_lesson.id %}
+          <form action="{% url 'mark_lesson_completed' selected_lesson.id %}" method="POST">
+            {% csrf_token %}
+            <button class="btn btn-success mt-3">
+              <i class="fa-solid fa-check me-2"></i>Mark Lesson Completed
+            </button>
+          </form>
+          {% endif %}
+
+        {% else %}
+          <h4 class="fw-bold">Welcome to {{ course.title }}</h4>
+          <p class="text-muted">Select a lesson from the sidebar to start learning!</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JS for auto-complete video -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const video = document.getElementById('lessonVideo');
+  {% if selected_lesson.id %}
+  if(video) {
+    video.addEventListener('ended', function() {
+      fetch("{% url 'mark_lesson_completed' selected_lesson.id %}", {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'}
+      }).then(() => location.reload());
+    });
+  }
+  {% endif %}
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

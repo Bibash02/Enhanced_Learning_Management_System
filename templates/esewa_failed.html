@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Payment Failed</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Times New Roman", serif; }
+    body {
+        background: #f8d7da;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+    .fail-container {
+        background: #ffffff;
+        padding: 35px 45px;
+        border-radius: 12px;
+        text-align: center;
+        width: 400px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        border-top: 6px solid #dc3545;
+        animation: drop 0.5s ease;
+    }
+    h2 {
+        color: #dc3545;
+        font-size: 26px;
+        margin-bottom: 15px;
+    }
+    p { font-size: 16px; color: #333; margin-bottom: 10px; }
+    .order-id { font-weight: bold; }
+
+    .btn {
+        display: inline-block;
+        margin-top: 20px;
+        background: #dc3545;
+        color: #fff;
+        padding: 10px 18px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 15px;
+        transition: 0.3s;
+    }
+    .btn:hover { background: #bd2130; }
+
+    @keyframes drop {
+        0% { opacity: 0; transform: translateY(-20px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .icon {
+        font-size: 50px;
+        color: #dc3545;
+        margin-bottom: 10px;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="fail-container">
+    <div class="icon">✖</div>
+    <h2>Payment Failed</h2>
+
+    {% if order %}
+      <p>Your payment could not be completed.</p>
+      <p class="order-id">Order ID: {{ order.id }}</p>
+    {% else %}
+      <h2>{{ message }}</h2>
+    {% endif %}
+
+    <a href="{% url 'course_list' %}" class="btn">Try Again</a>
+</div>
+
+</body>
+</html>

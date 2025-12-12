@@ -1,0 +1,119 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ assignment.title }} - Student Submissions</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: "Times New Roman", serif;
+      background-color: #f7f9fa;
+    }
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #343a40;
+      color: white;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar a {
+      color: white;
+      text-decoration: none;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      transition: background 0.3s;
+    }
+    .sidebar a:hover {
+      background-color: #495057;
+    }
+    .main-content {
+      margin-left: 270px;
+      padding: 40px;
+    }
+    .card {
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      margin-bottom: 25px;
+    }
+    textarea {
+      resize: vertical;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <h3>{{ user.first_name }}'s Panel</h3>
+    <a href="{% url 'instructor_dashboard' %}">Dashboard</a>
+    <a href="{% url 'assignment_create' %}">Create Assignment</a>
+    <a href="{% url 'signout' %}">Logout</a>
+  </div>
+
+  <div class="main-content">
+    <h2 class="fw-bold">{{ assignment.title }} - Student Submissions</h2>
+    <p><strong>Course:</strong> {{ assignment.course.title }}</p>
+    <p><strong>Due Date:</strong> {{ assignment.created_at }}</p>
+    <hr>
+
+    {% if submissions %}
+      {% for sub in submissions %}
+        <div class="card p-4">
+          <h5>👤 {{ sub.student.first_name }} {{ sub.student.last_name }}</h5>
+          <p><strong>Submitted:</strong> {{ sub.submitted_at|date:"M d, Y H:i" }}</p>
+          <hr>
+
+          <!-- STUDENT ANSWERS -->
+          {% for ans in sub.studentanswer_set.all %}
+            <div class="mb-3">
+              <p><strong>Q{{ forloop.counter }}:</strong> {{ ans.question.question_text }}</p>
+
+              <p class="mb-1"><strong>Answer:</strong> {{ ans.answer_text }}</p>
+
+              {% if ans.question.correct_option %}
+                {% if ans.answer_text|lower == ans.question.correct_option|lower %}
+                  <span class="badge bg-success">Correct</span>
+                {% else %}
+                  <span class="badge bg-danger">Incorrect</span>
+                  <small>(Correct: {{ ans.question.correct_option }})</small>
+                {% endif %}
+              {% endif %}
+            </div>
+            <hr>
+          {% endfor %}
+
+          <!-- FEEDBACK FORM -->
+          <form method="POST" class="mt-3">
+            {% csrf_token %}
+            <input type="hidden" name="submission_id" value="{{ sub.id }}">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Marks</label>
+              <input type="number" name="marks" class="form-control"
+                     value="{{ sub.marks|default_if_none:'' }}"
+                     placeholder="Enter marks (e.g., 90)" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Feedback</label>
+              <textarea name="feedback" class="form-control" rows="3"
+                        placeholder="Write feedback...">{{ sub.feedback|default_if_none:'' }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Save Feedback</button>
+          </form>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="alert alert-info">No student submissions yet.</div>
+    {% endif %}
+  </div>
+
+</body>
+</html>

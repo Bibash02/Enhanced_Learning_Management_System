@@ -1,0 +1,83 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting to eSewa</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:"Times New Roman", sans-serif; }
+    body { background:#f4f4f4; display:flex; justify-content:center; align-items:center; height:100vh; }
+    .container { background:#fff; padding:40px 50px; border-radius:12px; text-align:center; box-shadow:0 8px 20px rgba(0,0,0,0.15); width:400px; }
+    h2 { color:#10b981; font-size:26px; margin-bottom:15px; }
+    p { font-size:15px; color:#333; margin-bottom:20px; }
+    .spinner { width:50px; height:50px; border:4px solid #e0f4ec; border-top:4px solid #10b981; border-radius:50%; margin:20px auto; animation:spin 1s linear infinite; }
+    @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+    button { padding:12px 25px; background:#10b981; color:#fff; border:none; border-radius:5px; cursor:pointer; font-size:15px; transition:0.3s; }
+    button:hover { background:#0c9463; }
+    small { display:block; margin-top:15px; color:#777; font-size:13px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Please Wait...</h2>
+    <p>You are being redirected to eSewa for payment.</p>
+    <div class="spinner"></div>
+    
+    <form action="https://rc-epay.esewa.com.np/api/epay/main/v2/form" method="POST">
+      <input type="hidden" name="amount" value="{{ amount }}">
+      <input type="hidden" name="tax_amount" value="0">
+      <input type="hidden" name="total_amount" value="{{ amount }}">
+      <input type="hidden" name="transaction_uuid" value="{{ transaction_uuid }}">
+      <input type="hidden" name="product_code" value="{{ product_code }}">
+      <input type="hidden" name="product_service_charge" value="0">
+      <input type="hidden" name="product_delivery_charge" value="0">
+
+      <input type="hidden" name="success_url" value="http://127.0.0.1:8000/esewa/success/">
+      <input type="hidden" name="failure_url" value="http://127.0.0.1:8000/esewa/failure/">
+
+      <input type="hidden" name="signed_field_names" value="total_amount,transaction_uuid,product_code">
+      <input type="hidden" name="signature" value="{{ signature }}">
+
+      <button type="submit">Pay with eSewa</button>
+    </form>
+
+    <small>Do not refresh or close this page while the payment is processing.</small>
+  </div>
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Redirecting to eSewa</title></head>
+<body>
+  <div class="container">
+    <h2>Please wait, redirecting to eSewa...</h2>
+
+    <form id="esewaForm" action="https://rc-epay.esewa.com.np/api/epay/main/v2/form" method="POST">
+      eSewa fields 
+      <input type="hidden" name="amount" value="{{ total_amount }}">
+      <input type="hidden" name="tax_amount" value="0">
+      <input type="hidden" name="total_amount" value="{{ total_amount }}">
+      <input type="hidden" name="transaction_uuid" value="{{ transaction_uuid }}">
+      <input type="hidden" name="product_code" value="{{ product_code }}">
+      <input type="hidden" name="product_service_charge" value="0">
+      <input type="hidden" name="product_delivery_charge" value="0">
+
+      <input type="hidden" name="success_url" value="{{ success_url }}">
+      <input type="hidden" name="failure_url" value="{{ failure_url }}">
+
+      <input type="hidden" name="signed_field_names" value="total_amount,transaction_uuid,product_code">
+      <input type="hidden" name="signature" value="{{ signature }}">
+
+      <button type="submit">Proceed to eSewa</button>
+    </form>
+
+    <script>
+      // auto-submit after a short pause
+      setTimeout(function(){ document.getElementById('esewaForm').submit(); }, 800);
+    </script>
+  </div>
+</body>
+</html>
+  

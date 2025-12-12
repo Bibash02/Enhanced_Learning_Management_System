@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Lesson</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f5f6fa;
+            font-family: 'Times New Roman', sans-serif;
+        }
+        .container {
+            max-width: 750px;
+            margin-top: 60px;
+            background: #fff;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
+        }
+        h2 {
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        label { font-weight: 500; color: #444; }
+        input, textarea, select {
+            width: 100%;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 5px;
+            font-size: 15px;
+        }
+        textarea { min-height: 100px; }
+        input:focus, textarea:focus, select:focus {
+            border-color: #101012;
+            outline: none;
+            box-shadow: 0 0 5px rgba(13,110,253,0.2);
+        }
+        .btn-success { background-color: #121413; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 500; }
+        .btn-success:hover { background-color: #7d817f; }
+        .btn-secondary { background-color: #6c757d; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 500; }
+        .btn-secondary:hover { background-color: #565e64; }
+        .text-danger.small { font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Add Lesson for "{{ course.title }}"</h2>
+
+        <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <!-- Select Module -->
+            <div class="mb-3">
+                <label for="id_module" class="form-label">Select Module</label>
+                <select name="module" id="id_module" required>
+                    <option value="">-- Select a Module --</option>
+                    {% for module in form.fields.module.queryset %}
+                        <option value="{{ module.id }}">{{ module.title }}</option>
+                    {% endfor %}
+                </select>
+                {% for error in form.module.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Lesson Title -->
+            <div class="mb-3">
+                <label for="id_title" class="form-label">Lesson Title</label>
+                <input type="text" name="title" id="id_title" placeholder="Enter lesson title" required>
+                {% for error in form.title.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Content -->
+            <div class="mb-3">
+                <label for="id_content" class="form-label">Lesson Content</label>
+                <textarea name="content" id="id_content" placeholder="Enter detailed lesson content..." required></textarea>
+                {% for error in form.content.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Duration -->
+            <div class="mb-3">
+                <label for="id_duration_minutes" class="form-label">Duration (minutes)</label>
+                <input type="number" name="duration_minutes" id="id_duration_minutes" min="0" placeholder="e.g., 30">
+                {% for error in form.duration_minutes.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Upload Video -->
+            <div class="mb-3">
+                <label for="id_vedio" class="form-label">Upload Video</label>
+                <input type="file" name="vedio" id="id_vedio" accept="video/*">
+                <small class="text-muted">Supported: MP4, MOV, AVI</small>
+                {% for error in form.vedio.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Upload PDF -->
+            <div class="mb-3">
+                <label for="id_pdf_material" class="form-label">Upload PDF Material</label>
+                <input type="file" name="pdf_material" id="id_pdf_material" accept="application/pdf">
+                <small class="text-muted">Attach additional materials (PDF only)</small>
+                {% for error in form.pdf_material.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Order -->
+            <div class="mb-3">
+                <label for="id_order" class="form-label">Order (optional)</label>
+                <input type="number" name="order" id="id_order" min="0" placeholder="e.g., 1 for first lesson">
+                {% for error in form.order.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Buttons -->
+            <div class="d-flex justify-content-start">
+                <button type="submit" class="btn btn-success me-2">Add Lesson</button>
+                <a href="{% url 'instructor_dashboard' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

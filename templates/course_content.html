@@ -1,0 +1,168 @@
+{% extends 'base1.html' %}
+{% load static %}
+{% block content %}
+<div class="container py-5">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            {% for item in breadcrumb %}
+                {% if item.active %}
+                    <li class="breadcrumb-item active">{{ item.name }}</li>
+                {% else %}
+                    <li class="breadcrumb-item"><a href="{% url item.url %}">{{ item.name }}</a></li>
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </nav>
+
+    <!-- Course Header (Always Visible) -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            {% if course.thumbnail %}
+                <img src="{{ course.thumbnail.url }}" class="img-fluid rounded mb-3" alt="{{ course.title }}" style="max-height: 300px; object-fit: cover;">
+            {% endif %}
+            <h1>{{ course.title }}</h1>
+            <p class="lead">{{ course.description }}</p>
+            <ul class="list-unstyled">
+                <li><strong>Instructor:</strong> {{ course.instructor.get_full_name|default:course.instructor.username }}</li>
+                <li><strong>Level:</strong> {{ course.get_level_display }}</li>
+                <li><strong>Duration:</strong> {{ course.duration_hours }} hours</li>
+                <li><strong>Price:</strong> ${{ course.price }}</li>
+            </ul>
+            {% if is_enrolled %}
+                <div class="progress mb-3" style="height: 25px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ course_progress }}%;" 
+                         aria-valuenow="{{ course_progress }}" aria-valuemin="0" aria-valuemax="100">
+                        {{ course_progress|floatformat:0 }}% Complete ({{ completed_lessons }}/{{ total_lessons }} lessons)
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        <div class="col-md-4 text-center">
+            {% if not is_enrolled and not is_instructor %}
+                <!-- Enroll Prompt for Non-Enrolled -->
+                <div class="card border-primary">
+                    <div class="card-body">
+                        <h5 class="card-title">Ready to Learn?</h5>
+                        <p class="card-text">Enroll to unlock all lessons, videos, and quizzes.</p>
+                        <a href="{% url 'enroll_course' course.id %}" class="btn btn-success btn-lg w-100">Enroll Now - ${{ course.price }}</a>
+                        <small class="text-muted d-block mt-2">Start your learning journey today!</small>
+                    </div>
+                </div>
+            {% elif is_instructor %}
+                <!-- Instructor Actions -->
+                <div class="card">
+                    <div class="card-body">
+                        <h6>Your Course</h6>
+                        <a href="{% url 'course_edit' course.id %}" class="btn btn-outline-primary w-100 mb-2">Edit Course</a>
+                        <a href="{% url 'assignment_create' %}" class="btn btn-outline-success w-100">Add Assignment</a>
+                    </div>
+                </div>
+            {% else %}
+                <!-- Enrolled Student Actions -->
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6>Your Progress</h6>
+                        <p>You're enrolled! Dive into the lessons below.</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if is_enrolled or is_instructor %}
+        <!-- Learning Content: Lessons -->
+        <div class="row">
+            <div class="col-12">
+                <h2>Course Content</h2>
+                <p class="text-muted">Follow these lessons in order to complete the course. Mark each as complete when finished.</p>
+                
+                {% if lessons %}
+                    <div class="accordion" id="lessonsAccordion">  <!-- Accordion for better UX on mobile -->
+                        {% for lesson in lessons %}
+                        <div class="accordion-item">
+                            <h3 class="accordion-header" id="heading{{ lesson.id }}">
+                                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#collapse{{ lesson.id }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <span>{{ lesson.order }}. {{ lesson.title }}</span>
+                                        <small class="text-muted">({{ lesson.duration_minutes }} min)</small>
+                                    </div>
+                                </button>
+                            </h3>
+                            <div id="collapse{{ lesson.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" 
+                                 aria-labelledby="heading{{ lesson.id }}" data-bs-parent="#lessonsAccordion">
+                                <div class="accordion-body">
+                                    <p class="mb-3">{{ lesson.description }}</p>
+                                    
+                                    <!-- Render Lesson Content Based on Type -->
+                                    {% if lesson.content_type == 'video' and lesson.content_url %}
+                                        <div class="ratio ratio-16x9 mb-3">  <!-- Responsive video embed -->
+                                            <iframe src="{{ lesson.content_url|add:'?rel=0'" allowfullscreen></iframe>
+                                        </div>
+                                    {% elif lesson.content_type == 'text' and lesson.content_text %}
+                                        <div class="card bg-light p-3 mb-3">
+                                            <h6>Reading Material</h6>
+                                            {{ lesson.content_text|linebreaks }}
+                                        </div>
+                                    {% elif lesson.content_type == 'quiz' %}
+                                        <div class="alert alert-info">
+                                            <h6>Quiz Time!</h6>
+                                            <p>Test your knowledge here. <a href="{% url 'assignment_detail' lesson.quiz_assignment.id %}" class="alert-link">Take Quiz</a></p>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Completion for Enrolled Students -->
+                                    {% if is_enrolled %}
+                                        {% with completion=lesson.studentlessoncompletion_set.filter(enrollment=enrollment, is_completed=True).first %}
+                                            {% if completion %}
+                                                <span class="badge bg-success fs-6">✓ Completed on {{ completion.completed_at|date:"M d, Y" }}</span>
+                                            {% else %}
+                                                <form method="post" style="display: inline-block;">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+                                                    <button type="submit" class="btn btn-success btn-sm">Mark as Complete</button>
+                                                </form>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <h5>No Content Yet</h5>
+                        <p>This course has no lessons. {% if is_instructor %}<a href="{% url 'add_lesson' course.id %}">Add Lessons</a>{% else %}Contact the instructor.{% endif %}</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Assignments/Quizzes Section -->
+        {% if assignments %}
+        <div class="row mt-5">
+            <div class="col-12">
+                <h2>Assignments & Quizzes</h2>
+                <p class="text-muted">Complete these to earn points and track your progress.</p>
+                <div class="list-group">
+                    {% for assignment in assignments %}
+                    <div class="list-group-item d-flex justify-content-between align-items-start">
+                        <div class="ms-2 me-auto">
+                            <div class="fw-bold">{{ assignment.title }}</div>
+                            <p class="mb-1">{{ assignment.description|truncatewords:20 }}</p>
+                            <small class="text-muted">
+                                Due: {{ assignment.due_date|date:"M d, Y H:i" }} • {{ assignment.max_points }} points
+                            </small>
+                        </div>
+                        <a href="{% url 'assignment_detail' assignment.id %}" class="btn btn-primary">Start Assignment</a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

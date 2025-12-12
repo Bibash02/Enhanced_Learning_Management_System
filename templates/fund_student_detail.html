@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fund {{ student.first_name }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: "Times New Roman", serif;
+      background: #f4f4f4;
+      margin: 0;
+      color: #333;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background: #343a40;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      font-size: 22px;
+      margin-bottom: 30px;
+    }
+
+    .sidebar a {
+      color: #fff;
+      text-decoration: none;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      display: block;
+      transition: background 0.3s ease;
+    }
+
+    .sidebar a:hover {
+      background: #495057;
+    }
+
+    /* Main content */
+    .main-content {
+      margin-left: 270px;
+      padding: 40px;
+    }
+
+    .student-detail-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .student-detail-card img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 20px;
+    }
+
+    .form-container {
+      background: #fff;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        overflow-x: auto;
+      }
+      .sidebar a { margin-right: 10px; }
+      .main-content { margin-left: 0; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>{{ sponsor_name }}'s Panel</h2>
+    <a href="{% url 'sponsor_dashboard' %}" class="active"><i class="fas fa-tachometer-alt"></i>Overview</a>
+    <a href=""><i class="fas fa-users"></i>My Sponsored Students</a>
+    <a href=""><i class="fas fa-history"></i>Funding History</a>
+    <a href="{% url 'fund_student' %}"><i class="fas fa-user-plus"></i>Fund Student</a>
+    <a href="{% url 'fund_course_page' %}"><i class="fas fa-book"></i>Fund Course</a>
+    <a href="{% url 'sponsor_profile' %}"><i class="fas fa-user-circle"></i>Profile</a>
+    <a href="{% url 'signout' %}"><i class="fas fa-sign-out-alt"></i>Logout</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <h1>Fund {{ student.first_name }} {{ student.last_name }}</h1>
+
+    <!-- Student Details -->
+    <div class="student-detail-card mb-5">
+      {% if student.userprofile.profile_picture %}
+        <img src="{{ student.userprofile.profile_picture.url }}" alt="{{ student.first_name }}">
+      {% else %}
+        <img src="{% static 'images/default_user.png' %}" alt="Default Profile">
+      {% endif %}
+      <h4>{{ student.first_name }} {{ student.last_name }}</h4>
+      <p class="text-muted">{{ student.email }}</p>
+    </div>
+
+    <!-- Funding Form -->
+    <div class="form-container">
+      <h4>Fund This Student’s Course</h4>
+      <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="course" class="form-label">Select Course to Fund</label>
+          <select name="course" id="course" class="form-select" required>
+            <option value="" disabled selected>Select a course</option>
+            {% for enrollment in courses %}
+              <option value="{{ enrollment.course.id }}">{{ enrollment.course.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label for="amount" class="form-label">Funding Amount (in NPR)</label>
+          <input type="number" step="0.01" min="0" name="amount" id="amount" class="form-control" required placeholder="Enter amount">
+        </div>
+
+        <button type="submit" class="btn btn-success">Confirm Sponsorship</button>
+        <a href="{% url 'fund_student' %}" class="btn btn-secondary">Back</a>
+      </form>
+    </div>
+  </div>
+
+</body>
+</html>

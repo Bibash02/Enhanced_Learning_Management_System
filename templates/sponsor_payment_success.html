@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Successful</title>
+</head>
+<body style="text-align:center; padding:40px;">
+    <h1 style="color:green;">Payment Successful ✔</h1>
+
+    <p>Amount: <strong>Rs. {{ amount }}</strong></p>
+    <p>Transaction ID: <strong>{{ transaction_uuid }}</strong></p>
+
+    <br>
+    <a href="{% url 'sponsor_dashboard' %}" 
+       style="padding:10px 20px; background:black; color:white;">
+        Go to Sponsor Dashboard
+    </a>
+</body>
+</html>

@@ -1,0 +1,180 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Funding History</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <style>
+    body {
+      font-family: "Times New Roman", serif;
+      background: #f4f4f4;
+    }
+
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 250px;
+      height: 100%;
+      background: #343a40;
+      color: #fff;
+      padding: 20px;
+    }
+
+    .sidebar a {
+      color: #fff;
+      text-decoration: none;
+      display: block;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+    .sidebar a:hover, .sidebar a.active { 
+      background: #495057; 
+    }
+
+    .main-content {
+      margin-left: 270px;
+      padding: 40px;
+    }
+
+    table {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    th, td {
+      vertical-align: middle !important;
+    }
+
+    .pagination .page-item.active .page-link {
+      background-color: #343a40;
+      border-color: #343a40;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <h2>{{ sponsor_name }}'s Panel</h2>
+  <a href="{% url 'sponsor_dashboard' %}">Overview</a>
+  <a href="{% url 'funding_history' %}" class="active">Funding History</a>
+  <a href="{% url 'fund_student' %}">Fund Student</a>
+  <a href="{% url 'fund_course_page' %}">Fund Course</a>
+  <a href="{% url 'sponsor_profile' %}">Profile</a>
+  <a href="{% url 'signout' %}">Logout</a>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">
+  <h1>Funding History</h1>
+  <p>All your fundings are listed below.</p>
+
+  {% if fundings %}
+  <div class="table-responsive">
+    <table class="table table-striped table-hover mt-3">
+      <thead class="table-dark">
+        <tr>
+          <th>Type</th>
+          <th>Recipient / Course</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for funding in fundings %}
+        <tr>
+          <td>
+            {% if funding.student %}
+              Student
+            {% elif funding.course %}
+              Course
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>
+            {% if funding.student %}
+              {{ funding.student.user.get_full_name }} ({{ funding.student.user.email }})
+            {% elif funding.course %}
+              {{ funding.course.title }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>Rs.{{ funding.amount|floatformat:2 }}</td>
+          <td>
+            {% if funding.status == "Pending" %}
+              <span class="badge bg-warning text-dark">{{ funding.status }}</span>
+            {% elif funding.status == "Completed" %}
+              <span class="badge bg-success">{{ funding.status }}</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ funding.status }}</span>
+            {% endif %}
+          </td>
+          <td>{{ funding.funded_at|date:"M d, Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if fundings.has_other_pages %}
+  <nav aria-label="Page navigation" class="mt-3">
+    <ul class="pagination justify-content-center">
+
+      {% if fundings.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ fundings.previous_page_number }}">Previous</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Previous</span></li>
+      {% endif %}
+
+      {% for num in fundings.paginator.page_range %}
+        {% if fundings.number == num %}
+          <li class="page-item active">
+            <span class="page-link">{{ num }}</span>
+          </li>
+        {% elif num >= fundings.number|add:'-2' and num <= fundings.number|add:'2' %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+          </li>
+        {% elif num == 1 or num == fundings.paginator.num_pages %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+          </li>
+        {% elif num == fundings.number|add:'-3' or num == fundings.number|add:'3' %}
+          <li class="page-item disabled"><span class="page-link">...</span></li>
+        {% endif %}
+      {% endfor %}
+
+      {% if fundings.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ fundings.next_page_number }}">Next</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Next</span></li>
+      {% endif %}
+
+    </ul>
+  </nav>
+  {% endif %}
+
+  {% else %}
+    <div class="alert alert-info mt-3">
+      You have not made any fundings yet.
+    </div>
+  {% endif %}
+</div>
+
+</body>
+</html>

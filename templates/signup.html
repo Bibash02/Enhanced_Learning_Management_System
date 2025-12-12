@@ -1,0 +1,181 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signup Page</title>
+  <style>
+    * {
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #f4f4f4;
+    }
+
+    .container {
+      display: flex;
+      width: 900px;
+      height: auto;
+      background: #fff;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .left {
+      flex: 1;
+      padding: 50px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .left h2 {
+      font-size: 28px;
+      margin-bottom: 10px;
+      font-family: "Times New Roman", serif;
+    }
+
+    .left p {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: #000;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 15px;
+      margin-bottom: 15px;
+    }
+
+    .signin {
+      text-align: center;
+      font-size: 14px;
+      margin-top: 15px;
+    }
+
+    .signin a {
+      text-decoration: none;
+      color: #000;
+      font-weight: bold;
+    }
+
+    .right {
+      flex: 1;
+      background: url("{% static 'images/pic1.jpg' %}") no-repeat center center/cover;
+      position: relative;
+      color: #fff;
+      display: flex;
+      align-items: flex-end;
+      padding: 30px;
+    }
+
+    .right h3 {
+      font-size: 28px;
+      margin-bottom: 5px;
+    }
+
+    .right p {
+      font-size: 14px;
+      max-width: 250px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="left">
+      <h2>Create Account ✦</h2>
+      <p>Be part of something bigger. Start now!...</p>
+
+      <!-- IMPORTANT: enctype added for file upload -->
+      <form method="POST" action="{% url 'signup' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" name="fullname" placeholder="Enter your full name" required>
+        </div>
+
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" name="email" placeholder="Enter your email" required>
+        </div>
+
+        <div class="form-group">
+          <label>Select Role:</label>
+          <select name="role" required>
+              <option value="">--Select Role--</option>
+              <option value="student">Student</option>
+              <option value="instructor">Instructor</option>
+              <option value="sponsor">Sponsor</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Profile Image</label>
+          <input type="file" name="profile_image" accept="image/*">
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" name="password" placeholder="Create a password" required>
+        </div>
+
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input type="password" name="confirm_password" placeholder="Confirm your password" required>
+        </div>
+
+        <button type="submit" class="btn">Sign Up</button>
+      </form>
+
+      <div class="signin">
+        Already have an account? <a href="{% url 'signin' %}">Sign in</a>
+      </div>
+    </div>
+
+    <div class="right">
+      <div>
+        <h3>Hello...</h3>
+        <p>Sign up and make your voice heard...</p>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
