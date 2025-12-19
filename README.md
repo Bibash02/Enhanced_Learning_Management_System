@@ -1,12 +1,14 @@
+# Introduction
 This project is an Enhanced Learning Management System (LMS) developed using Django and Python. It supports multiple user roles including Admin, Instructor, Student, and Sponsor, allowing for course management, student enrollment, sponsorship tracking, and more. The system is designed to facilitate online learning with features like authentication, analytics, notifications, and optional payment integration.
 The objective is to create a robust platform where:
 
+# Requirements
 Instructors can manage courses and assessments.
 Students can enroll in courses and complete assignments.
 Sponsors can fund students and monitor their progress.
 Admins oversee the entire platform.
 
-Features
+# Features
 
 Database Design:
 Custom schema designed based on research, including tables for users, courses, enrollments, assessments, sponsorships, and more.
@@ -47,7 +49,7 @@ Detailed API tests using tool Postman.
 User and developer documentation provided.
 
 
-Technologies Used
+# Technologies Used
 
 Backend: Django (Python web framework)
 Database: PostgreSQL 
