@@ -2,6 +2,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
+import re
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.contrib import messages
 from django.db.models import Q, Count, Avg, Min
@@ -41,6 +44,16 @@ def signup(request):
             messages.error(request, "Password do not match!")
             return redirect('signup')
 
+        if len(password) < 6:
+            messages.error(request, "Password must be at least 6 characters Long!")
+            return redirect('signup')
+        
+        try:
+            validate_email(email)
+        except ValidationError:
+            messages.error(request, "Invalid email address!")
+            return redirect('signup')
+
         if User.objects.filter(username=email).exists():
             messages.error(request, "Email already exists!")
             return redirect('signup')
@@ -48,6 +61,16 @@ def signup(request):
         if role not in ['student', 'instructor', 'sponsor']:
             messages.error(request, "Please select a valid role.")
             return redirect('signup')
+
+        if image:
+            valid_extensions = ['.jpg', '.jpeg', '.png']
+            if not any(image.name.lower().endswith(ext) for ext in valid_extensions):
+                messages.error(request, "Invalid image format! Only .jpg, .jpeg, .png allowed.")
+                return redirect('signup')
+            
+            if image.size > 2 * 1024 * 1024:
+                messages.error(request, "Image size must be under 2MB!")
+                return redirect('signup')
 
         user = User.objects.create_user(
             username=email, email=email, password=password, first_name=fullname
@@ -67,9 +90,10 @@ def signup(request):
 
         messages.success(request, "Account created Successfully.")
         return redirect('signin')
+    
     return render(request, 'signup.html')
 
-def     signin(request):
+def signin(request):
     if request.method == "POST":
         email = request.POST.get("email")
         password = request.POST.get("password")
