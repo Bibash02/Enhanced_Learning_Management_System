@@ -67,10 +67,6 @@ def signup(request):
             if not any(image.name.lower().endswith(ext) for ext in valid_extensions):
                 messages.error(request, "Invalid image format! Only .jpg, .jpeg, .png allowed.")
                 return redirect('signup')
-            
-            if image.size > 2 * 1024 * 1024:
-                messages.error(request, "Image size must be under 2MB!")
-                return redirect('signup')
 
         user = User.objects.create_user(
             username=email, email=email, password=password, first_name=fullname
@@ -121,7 +117,6 @@ def signin(request):
             messages.error(request, "Invalid email or password!")
             return redirect('signin')
     return render(request, 'signin.html')
-
 
 def signout(request):
     logout(request)
