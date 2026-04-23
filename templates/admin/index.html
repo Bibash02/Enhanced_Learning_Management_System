@@ -1,0 +1,386 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Online Learning</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+</head>
+<body>
+
+<!-- ══════════ Sidebar ══════════ -->
+<div class="sidebar">
+    <h2>Online Learning</h2>
+    <span class="admin-badge">{{request.user}}'s Panel</span>
+
+    <span class="nav-section-label">Main</span>
+    <a href="{% url 'admin_dashboard' %}" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+
+    <span class="nav-section-label">Management</span>
+    <a href="{% url 'admin:lms_course_changelist' %}"><i class="fas fa-graduation-cap"></i> Courses</a>
+    <a href="{% url 'admin:lms_userprofile_changelist' %}"><i class="fas fa-users"></i> Users</a>
+    <a href="{% url 'admin:lms_sponsorprofile_changelist' %}"><i class="fas fa-chalkboard-teacher"></i> Sponsors</a>
+    <a href="{% url 'admin:lms_coursecategory_changelist' %}"><i class="fas fa-tags"></i> Categories</a>
+
+    <span class="nav-section-label">Finance</span>
+    <a href="{% url 'admin:lms_funding_changelist' %}"><i class="fas fa-dollar-sign"></i> Funding</a>
+    <a href="{% url 'admin:lms_enrollment_changelist' %}"><i class="fas fa-file-invoice"></i> Enrollments</a>
+
+    <span class="nav-section-label">System</span>
+    <a href="#"><i class="fas fa-cog"></i> Settings</a>
+    <a href="#"><i class="fas fa-chart-bar"></i> Reports</a>
+
+    <div class="sidebar-footer">
+        <a href="{% url 'admin:logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
+</div>
+
+<!-- ══════════ Main Content ══════════ -->
+<div class="main-content">
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div>
+            <h1>Admin Dashboard</h1>
+            <p class="text-muted mb-0" style="font-size:14px;">Welcome back! Here's what's happening today.</p>
+        </div>
+        <div class="admin-info">
+            <span class="text-muted" style="font-size:14px;">Super Admin</span>
+            <div class="admin-avatar">A</div>
+        </div>
+    </div>
+
+    <!-- ── Stat Cards ── -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon students"><i class="fas fa-user-graduate"></i></div>
+                <div class="stat-info">
+                    <h3>1,284</h3>
+                    <p>Total Students</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon courses"><i class="fas fa-book-open"></i></div>
+                <div class="stat-info">
+                    <h3>86</h3>
+                    <p>Total Courses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon revenue"><i class="fas fa-rupee-sign"></i></div>
+                <div class="stat-info">
+                    <h3>Rs.4.2L</h3>
+                    <p>Total Revenue</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon pending"><i class="fas fa-clock"></i></div>
+                <div class="stat-info">
+                    <h3>12</h3>
+                    <p>Pending Approvals</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Main Grid ── -->
+    <div class="row g-4">
+
+        <!-- Recent Courses Table -->
+        <div class="col-lg-8">
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="fas fa-book-open me-2"></i>Recent Courses</h5>
+                    <a href="#" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i> Add Course
+                    </a>
+                </div>
+                <div class="section-body p-0">
+                    <table class="table mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Course</th>
+                                <th>Instructor</th>
+                                <th>Students</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="ps-4">
+                                    <div style="font-weight:600;font-size:14px;">Python for Beginners</div>
+                                    <div style="font-size:12px;color:#868e96;">Programming</div>
+                                </td>
+                                <td>Raj Sharma</td>
+                                <td><span class="badge bg-secondary">245</span></td>
+                                <td>Rs.1,499</td>
+                                <td><span class="badge-active">Active</span></td>
+                                <td>
+                                    <a href="#" class="btn btn-outline-primary btn-sm me-1"><i class="fas fa-edit"></i></a>
+                                    <a href="#" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">
+                                    <div style="font-weight:600;font-size:14px;">Web Design Masterclass</div>
+                                    <div style="font-size:12px;color:#868e96;">Design</div>
+                                </td>
+                                <td>Sita Karki</td>
+                                <td><span class="badge bg-secondary">189</span></td>
+                                <td>Rs.2,199</td>
+                                <td><span class="badge-active">Active</span></td>
+                                <td>
+                                    <a href="#" class="btn btn-outline-primary btn-sm me-1"><i class="fas fa-edit"></i></a>
+                                    <a href="#" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">
+                                    <div style="font-weight:600;font-size:14px;">Data Science Fundamentals</div>
+                                    <div style="font-size:12px;color:#868e96;">Data</div>
+                                </td>
+                                <td>Hari Thapa</td>
+                                <td><span class="badge bg-secondary">98</span></td>
+                                <td>Rs.3,499</td>
+                                <td><span class="badge-pending">Pending</span></td>
+                                <td>
+                                    <a href="#" class="btn btn-outline-primary btn-sm me-1"><i class="fas fa-edit"></i></a>
+                                    <a href="#" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">
+                                    <div style="font-weight:600;font-size:14px;">Digital Marketing</div>
+                                    <div style="font-size:12px;color:#868e96;">Marketing</div>
+                                </td>
+                                <td>Priya Joshi</td>
+                                <td><span class="badge bg-secondary">312</span></td>
+                                <td>Rs.999</td>
+                                <td><span class="badge-active">Active</span></td>
+                                <td>
+                                    <a href="#" class="btn btn-outline-primary btn-sm me-1"><i class="fas fa-edit"></i></a>
+                                    <a href="#" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">
+                                    <div style="font-weight:600;font-size:14px;">Mobile App Development</div>
+                                    <div style="font-size:12px;color:#868e96;">Programming</div>
+                                </td>
+                                <td>Bikash Rai</td>
+                                <td><span class="badge bg-secondary">56</span></td>
+                                <td>Rs.4,299</td>
+                                <td><span class="badge-inactive">Inactive</span></td>
+                                <td>
+                                    <a href="#" class="btn btn-outline-primary btn-sm me-1"><i class="fas fa-edit"></i></a>
+                                    <a href="#" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="section-header" style="border-top:1px solid #e9ecef; border-bottom:none;">
+                    <small class="text-muted">Showing 5 of 86 courses</small>
+                    <a href="#" class="btn btn-outline-primary btn-sm">View All Courses</a>
+                </div>
+            </div>
+
+            <!-- Recent Students Table -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="fas fa-users me-2"></i>Recent Students</h5>
+                    <a href="#" class="btn btn-primary btn-sm">
+                        <i class="fas fa-user-plus me-1"></i> Add Student
+                    </a>
+                </div>
+                <div class="section-body p-0">
+                    <table class="table mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Student</th>
+                                <th>Email</th>
+                                <th>Enrolled</th>
+                                <th>Joined</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="ps-4">
+                                    <div style="font-weight:600;font-size:14px;">Ankit Shrestha</div>
+                                </td>
+                                <td style="font-size:13px;">ankit@email.com</td>
+                                <td><span class="badge bg-secondary">3 courses</span></td>
+                                <td style="font-size:13px;color:#868e96;">Apr 10, 2025</td>
+                                <td>
+                                    <a href="#" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i></a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">
+                                    <div style="font-weight:600;font-size:14px;">Nisha Tamang</div>
+                                </td>
+                                <td style="font-size:13px;">nisha@email.com</td>
+                                <td><span class="badge bg-secondary">1 course</span></td>
+                                <td style="font-size:13px;color:#868e96;">Apr 14, 2025</td>
+                                <td>
+                                    <a href="#" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i></a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">
+                                    <div style="font-weight:600;font-size:14px;">Rohan Bista</div>
+                                </td>
+                                <td style="font-size:13px;">rohan@email.com</td>
+                                <td><span class="badge bg-secondary">5 courses</span></td>
+                                <td style="font-size:13px;color:#868e96;">Mar 28, 2025</td>
+                                <td>
+                                    <a href="#" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i></a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="section-header" style="border-top:1px solid #e9ecef; border-bottom:none;">
+                    <small class="text-muted">Showing 3 of 1,284 students</small>
+                    <a href="#" class="btn btn-outline-primary btn-sm">View All Students</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-4">
+
+            <!-- Quick Actions -->
+            <div class="section-card mb-4">
+                <div class="section-header">
+                    <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="section-body">
+                    <a href="#" class="quick-action-btn">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Add New Course</span>
+                    </a>
+                    <a href="#" class="quick-action-btn">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Add Instructor</span>
+                    </a>
+                    <a href="#" class="quick-action-btn">
+                        <i class="fas fa-tag"></i>
+                        <span>Manage Categories</span>
+                    </a>
+                    <a href="#" class="quick-action-btn">
+                        <i class="fas fa-file-export"></i>
+                        <span>Export Reports</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Category Popularity -->
+            <div class="section-card mb-4">
+                <div class="section-header">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Category Popularity</h5>
+                </div>
+                <div class="section-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span style="font-size:14px;">Programming</span>
+                            <span style="font-size:13px;color:#868e96;">68%</span>
+                        </div>
+                        <div class="progress"><div class="progress-bar" style="width:68%"></div></div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span style="font-size:14px;">Design</span>
+                            <span style="font-size:13px;color:#868e96;">45%</span>
+                        </div>
+                        <div class="progress"><div class="progress-bar" style="width:45%"></div></div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span style="font-size:14px;">Marketing</span>
+                            <span style="font-size:13px;color:#868e96;">38%</span>
+                        </div>
+                        <div class="progress"><div class="progress-bar" style="width:38%"></div></div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span style="font-size:14px;">Data Science</span>
+                            <span style="font-size:13px;color:#868e96;">55%</span>
+                        </div>
+                        <div class="progress"><div class="progress-bar" style="width:55%"></div></div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span style="font-size:14px;">Business</span>
+                            <span style="font-size:13px;color:#868e96;">29%</span>
+                        </div>
+                        <div class="progress"><div class="progress-bar" style="width:29%"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="fas fa-history me-2"></i>Recent Activity</h5>
+                </div>
+                <div class="section-body">
+                    <div class="activity-item">
+                        <div class="activity-dot"></div>
+                        <div>
+                            <p><strong>Ankit Shrestha</strong> enrolled in Python for Beginners</p>
+                            <small>2 minutes ago</small>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-dot"></div>
+                        <div>
+                            <p>New course <strong>Data Science Fundamentals</strong> submitted for review</p>
+                            <small>18 minutes ago</small>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-dot"></div>
+                        <div>
+                            <p><strong>Nisha Tamang</strong> registered as a new student</p>
+                            <small>1 hour ago</small>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-dot"></div>
+                        <div>
+                            <p><strong>Sita Karki</strong> updated Web Design Masterclass</p>
+                            <small>3 hours ago</small>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-dot"></div>
+                        <div>
+                            <p>Revenue milestone: <strong>Rs.4 Lakh</strong> reached!</p>
+                            <small>Yesterday</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

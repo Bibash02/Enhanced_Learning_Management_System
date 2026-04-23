@@ -2075,3 +2075,6 @@ def sponsor_payment_fail(request):
     """
     messages.error(request, "Payment failed. Please try again.")
     return redirect("sponsor_dashboard")
+
+def admin_dashboard(request):
+    return render(request, 'admin/index.html')
