@@ -2077,4 +2077,23 @@ def sponsor_payment_fail(request):
     return redirect("sponsor_dashboard")
 
 def admin_dashboard(request):
-    return render(request, 'admin/index.html')
+
+    # total student based on roles
+    total_students = UserProfile.objects.filter(role='student').count()
+
+    # total courses
+    total_courses = Course.objects.count()
+
+    # total revenue
+    total_revenue = Order.objects.filter(status="Completed").aggregate(total=Sum('amount'))['total'] or 0
+
+    # pending approvals
+    pending_approvals = Order.objects.filter(status="Pending").count()
+
+    context = {
+        'total_students': total_students,
+        'total_courses': total_courses,
+        'total_revenue': total_revenue,
+        'pending_approvals': pending_approvals,
+    }
+    return render(request, 'admin/index.html', context)

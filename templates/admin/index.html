@@ -14,7 +14,7 @@
 <!-- ══════════ Sidebar ══════════ -->
 <div class="sidebar">
     <h2>Online Learning</h2>
-    <span class="admin-badge">{{request.user}}'s Panel</span>
+    <span class="admin-badge">Admins Panel</span>
 
     <span class="nav-section-label">Main</span>
     <a href="{% url 'admin_dashboard' %}" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
@@ -48,49 +48,58 @@
             <p class="text-muted mb-0" style="font-size:14px;">Welcome back! Here's what's happening today.</p>
         </div>
         <div class="admin-info">
-            <span class="text-muted" style="font-size:14px;">Super Admin</span>
+            <span class="text-muted" style="font-size:14px;">{{ request.user }}</span>
             <div class="admin-avatar">A</div>
         </div>
     </div>
 
     <!-- ── Stat Cards ── -->
     <div class="row g-4 mb-4">
+
+        <!-- Total Students -->
         <div class="col-md-3">
             <div class="stat-card">
                 <div class="stat-icon students"><i class="fas fa-user-graduate"></i></div>
                 <div class="stat-info">
-                    <h3>1,284</h3>
+                    <h3>{{ total_students }}</h3>
                     <p>Total Students</p>
                 </div>
             </div>
         </div>
+
+        <!-- Total Courses -->
         <div class="col-md-3">
             <div class="stat-card">
                 <div class="stat-icon courses"><i class="fas fa-book-open"></i></div>
                 <div class="stat-info">
-                    <h3>86</h3>
+                    <h3>{{ total_courses }}</h3>
                     <p>Total Courses</p>
                 </div>
             </div>
         </div>
+
+        <!-- Total Revenue -->
         <div class="col-md-3">
             <div class="stat-card">
                 <div class="stat-icon revenue"><i class="fas fa-rupee-sign"></i></div>
                 <div class="stat-info">
-                    <h3>Rs.4.2L</h3>
+                    <h3>Rs. {{ total_revenue }}</h3>
                     <p>Total Revenue</p>
                 </div>
             </div>
         </div>
+
+        <!-- Pending Approvals -->
         <div class="col-md-3">
             <div class="stat-card">
                 <div class="stat-icon pending"><i class="fas fa-clock"></i></div>
                 <div class="stat-info">
-                    <h3>12</h3>
+                    <h3>{{ pending_approvals }}</h3>
                     <p>Pending Approvals</p>
                 </div>
             </div>
         </div>
+
     </div>
 
     <!-- ── Main Grid ── -->

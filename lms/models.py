@@ -207,23 +207,6 @@ class QuizAttempt(models.Model):
     def __str__(self):
         return f"{self.student.username} - {self.quiz.title}"
 
-# class Discussion(models.Model):
-#     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='discussions')
-#     title = models.CharField(max_length=200)
-#     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     def __str__(self):
-#         return self.title
-
-# class Comment(models.Model):
-#     discussion = models.ForeignKey(Discussion, on_delete=models.CASCADE, related_name='comments')
-#     author = models.ForeignKey(User, on_delete=models.CASCADE)
-#     content = models.TextField()
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
-#     def __str__(self):
-#         return f"Comment by {self.author.username} on {self.discussion.title}"
-
 class Sponsorship(models.Model):
     sponsor = models.ForeignKey(SponsorProfile, on_delete=models.CASCADE, related_name="sponsorships")
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="funded_by")
@@ -251,26 +234,6 @@ class StudentProgress(models.Model):
 
 class StudentLessonCompletion(models.Model):
     pass
-
-    
-# class Checkout(models.Model):
-#     PAYMENT_CHOICES = [
-#         ('cod', 'Cash on Delivery'),
-#         ('esewa', 'eSewa'),
-#     ]
-
-#     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
-#     full_name = models.CharField(max_length=200)
-#     email = models.EmailField()
-#     phone = models.CharField(max_length=20, blank=True, null=True)
-#     address = models.TextField()
-#     course = models.CharField(max_length=255)
-#     amount = models.FloatField()
-#     payment_status = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='cod')
-#     created_at = models.DateTimeField(auto_now_add=True)
-
-#     def __str__(self):
-#         return f"{self.full_name} - {self.course}"
 
 class Enrollment(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='enrollments')
