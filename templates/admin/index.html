@@ -110,7 +110,7 @@
             <div class="section-card">
                 <div class="section-header">
                     <h5><i class="fas fa-book-open me-2"></i>Recent Courses</h5>
-                    <a href="#" class="btn btn-primary btn-sm">
+                    <a href="{% url 'admin:lms_course_add' %}" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus me-1"></i> Add Course
                     </a>
                 </div>
@@ -177,7 +177,7 @@
                     <small class="text-muted">
                         Showing {{ course_data|length }} of {{ total_courses }} courses
                     </small>
-                    <a href="#" class="btn btn-outline-primary btn-sm">View All Courses</a>
+                    <a href="{% url 'admin:lms_course_changelist' %}" class="btn btn-outline-primary btn-sm">View All Courses</a>
                 </div>
             </div>
 
@@ -185,7 +185,7 @@
             <div class="section-card">
                 <div class="section-header">
                     <h5><i class="fas fa-users me-2"></i>Recent Students</h5>
-                    <a href="#" class="btn btn-primary btn-sm">
+                    <a href="{% url 'admin:auth_user_add' %}" class="btn btn-primary btn-sm">
                         <i class="fas fa-user-plus me-1"></i> Add Student
                     </a>
                 </div>
@@ -242,7 +242,7 @@
                     <small class="text-muted">
                         Showing {{ students|length }} of {{ total_students }} students
                     </small>
-                    <a href="#" class="btn btn-outline-primary btn-sm">View All Students</a>
+                    <a href="{% url 'admin:lms_userprofile_changelist' %}" class="btn btn-outline-primary btn-sm">View All Students</a>
                 </div>
             </div>
         </div>

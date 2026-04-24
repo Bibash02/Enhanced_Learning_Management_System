@@ -85,5 +85,5 @@ urlpatterns = [
     path("student_profile_view/<student_id>", student_profile_view, name="student_profile_view"),
     path('funding-history', funding_history, name='funding_history'),
 
-    path('admin/dashboard', admin_dashboard, name='admin_dashboard'),
+    path('admin/admin-dashboard', admin_dashboard, name='admin_dashboard'),
 ]
