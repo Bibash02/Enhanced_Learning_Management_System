@@ -127,81 +127,56 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td class="ps-4">
-                                    <div style="font-weight:600;font-size:14px;">Python for Beginners</div>
-                                    <div style="font-size:12px;color:#868e96;">Programming</div>
-                                </td>
-                                <td>Raj Sharma</td>
-                                <td><span class="badge bg-secondary">245</span></td>
-                                <td>Rs.1,499</td>
-                                <td><span class="badge-active">Active</span></td>
-                                <td>
-                                    <a href="#" class="btn btn-outline-primary btn-sm me-1"><i class="fas fa-edit"></i></a>
-                                    <a href="#" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="ps-4">
-                                    <div style="font-weight:600;font-size:14px;">Web Design Masterclass</div>
-                                    <div style="font-size:12px;color:#868e96;">Design</div>
-                                </td>
-                                <td>Sita Karki</td>
-                                <td><span class="badge bg-secondary">189</span></td>
-                                <td>Rs.2,199</td>
-                                <td><span class="badge-active">Active</span></td>
-                                <td>
-                                    <a href="#" class="btn btn-outline-primary btn-sm me-1"><i class="fas fa-edit"></i></a>
-                                    <a href="#" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="ps-4">
-                                    <div style="font-weight:600;font-size:14px;">Data Science Fundamentals</div>
-                                    <div style="font-size:12px;color:#868e96;">Data</div>
-                                </td>
-                                <td>Hari Thapa</td>
-                                <td><span class="badge bg-secondary">98</span></td>
-                                <td>Rs.3,499</td>
-                                <td><span class="badge-pending">Pending</span></td>
-                                <td>
-                                    <a href="#" class="btn btn-outline-primary btn-sm me-1"><i class="fas fa-edit"></i></a>
-                                    <a href="#" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="ps-4">
-                                    <div style="font-weight:600;font-size:14px;">Digital Marketing</div>
-                                    <div style="font-size:12px;color:#868e96;">Marketing</div>
-                                </td>
-                                <td>Priya Joshi</td>
-                                <td><span class="badge bg-secondary">312</span></td>
-                                <td>Rs.999</td>
-                                <td><span class="badge-active">Active</span></td>
-                                <td>
-                                    <a href="#" class="btn btn-outline-primary btn-sm me-1"><i class="fas fa-edit"></i></a>
-                                    <a href="#" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="ps-4">
-                                    <div style="font-weight:600;font-size:14px;">Mobile App Development</div>
-                                    <div style="font-size:12px;color:#868e96;">Programming</div>
-                                </td>
-                                <td>Bikash Rai</td>
-                                <td><span class="badge bg-secondary">56</span></td>
-                                <td>Rs.4,299</td>
-                                <td><span class="badge-inactive">Inactive</span></td>
-                                <td>
-                                    <a href="#" class="btn btn-outline-primary btn-sm me-1"><i class="fas fa-edit"></i></a>
-                                    <a href="#" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
-                                </td>
-                            </tr>
+                        {% for item in course_data %}
+                        <tr>
+                            <td class="ps-4">
+                                <div style="font-weight:600;font-size:14px;">
+                                    {{ item.course.title }}
+                                </div>
+                                <div style="font-size:12px;color:#868e96;">
+                                    {{ item.course.category.name }}
+                                </div>
+                            </td>
+
+                            <td>{{ item.course.instructor.username }}</td>
+
+                            <td>
+                                <span class="badge bg-secondary">
+                                    {{ item.student_count }}
+                                </span>
+                            </td>
+
+                            <td>Rs.{{ item.course.price }}</td>
+
+                            <td>
+                                {% if item.course.is_published %}
+                                    <span class="badge-active">Active</span>
+                                {% else %}
+                                    <span class="badge-pending">Pending</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <a href="#" class="btn btn-outline-primary btn-sm me-1">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="#" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">No courses found</td>
+                        </tr>
+                        {% endfor %}
                         </tbody>
                     </table>
                 </div>
                 <div class="section-header" style="border-top:1px solid #e9ecef; border-bottom:none;">
-                    <small class="text-muted">Showing 5 of 86 courses</small>
+                    <small class="text-muted">
+                        Showing {{ course_data|length }} of {{ total_courses }} courses
+                    </small>
                     <a href="#" class="btn btn-outline-primary btn-sm">View All Courses</a>
                 </div>
             </div>
@@ -226,44 +201,47 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td class="ps-4">
-                                    <div style="font-weight:600;font-size:14px;">Ankit Shrestha</div>
-                                </td>
-                                <td style="font-size:13px;">ankit@email.com</td>
-                                <td><span class="badge bg-secondary">3 courses</span></td>
-                                <td style="font-size:13px;color:#868e96;">Apr 10, 2025</td>
-                                <td>
-                                    <a href="#" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i></a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="ps-4">
-                                    <div style="font-weight:600;font-size:14px;">Nisha Tamang</div>
-                                </td>
-                                <td style="font-size:13px;">nisha@email.com</td>
-                                <td><span class="badge bg-secondary">1 course</span></td>
-                                <td style="font-size:13px;color:#868e96;">Apr 14, 2025</td>
-                                <td>
-                                    <a href="#" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i></a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="ps-4">
-                                    <div style="font-weight:600;font-size:14px;">Rohan Bista</div>
-                                </td>
-                                <td style="font-size:13px;">rohan@email.com</td>
-                                <td><span class="badge bg-secondary">5 courses</span></td>
-                                <td style="font-size:13px;color:#868e96;">Mar 28, 2025</td>
-                                <td>
-                                    <a href="#" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i></a>
-                                </td>
-                            </tr>
+                        {% for student in students %}
+                        <tr>
+                            <td class="ps-4">
+                                <div style="font-weight:600;font-size:14px;">
+                                    {{ student.username }}
+                                </div>
+                            </td>
+
+                            <td style="font-size:13px;">
+                                {{ student.email }}
+                            </td>
+
+                            <td>
+                                <span class="badge bg-secondary">
+                                    {{ student.total_courses }} course{{ student.total_courses|pluralize }}
+                                </span>
+                            </td>
+
+                            <td style="font-size:13px;color:#868e96;">
+                                {{ student.date_joined|date:"M d, Y" }}
+                            </td>
+
+                            <td>
+                                <a href="#" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No students found</td>
+                        </tr>
+                        {% endfor %}
                         </tbody>
                     </table>
                 </div>
                 <div class="section-header" style="border-top:1px solid #e9ecef; border-bottom:none;">
-                    <small class="text-muted">Showing 3 of 1,284 students</small>
+                    <small class="text-muted">
+                        Showing {{ students|length }} of {{ total_students }} students
+                    </small>
                     <a href="#" class="btn btn-outline-primary btn-sm">View All Students</a>
                 </div>
             </div>

@@ -2076,7 +2076,24 @@ def sponsor_payment_fail(request):
     messages.error(request, "Payment failed. Please try again.")
     return redirect("sponsor_dashboard")
 
-def admin_dashboard(request):
+def admin_dashboard(request):   
+    courses = Course.objects.select_related('instructor', 'category')\
+        .order_by('-created_at')[:5]
+    
+    students = User.objects.filter(userprofile__role='student')\
+    
+    
+    total_students = User.objects.filter(userprofile__role='student').count()
+
+
+    course_data = []
+    for course in courses:
+        student_count = Enrollment.objects.filter(course=course).count()
+
+        course_data.append({
+            'course': course,
+            'student_count': student_count,
+        })
 
     # total student based on roles
     total_students = UserProfile.objects.filter(role='student').count()
@@ -2095,5 +2112,8 @@ def admin_dashboard(request):
         'total_courses': total_courses,
         'total_revenue': total_revenue,
         'pending_approvals': pending_approvals,
+        'course_data': course_data,
+        'students': students,
+        'total_students': total_students,
     }
     return render(request, 'admin/index.html', context)
