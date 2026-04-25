@@ -83,10 +83,30 @@ def signup(request):
                 company_name="",
                 website=None,
             )
+        
+        # Send welcome email
+        subject = "Welcome to Our Platform 🎉"
+        message = f"""
+        Hi {fullname},
+
+        Your account has been created successfully!
+
+        You can now log in using your email: {email}
+
+        Thank you for joining us.
+
+        - Team
+        """
+        recipient_list = [email]
+
+        try:
+            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list)
+        except Exception as e:
+            messages.warning(request, "Account created, but email could not be sent.")
 
         messages.success(request, "Account created Successfully.")
         return redirect('signin')
-    
+            
     return render(request, 'signup.html')
 
 def signin(request):
@@ -1878,44 +1898,6 @@ def sponsor_checkout(request, student_id):
 
     # If accessed via GET, redirect back
     return redirect("fund_student")
-
-# @login_required
-# def sponsor_payment_process(request, student_id):
-#     student = get_object_or_404(UserProfile, id=student_id, role='student')
-
-#     if request.method == 'POST':
-#         amount = request.POST.get('amount')
-#         transaction_uuid = str(uuid.uuid4())
-#         product_code = f"fund-{student.id}-{transaction_uuid}"
-#         message = f"Funding for {student.user.get_full_name()}"
-        
-#         # Save temporary record
-#         Funding.objects.create(
-#             student=student,
-#             sponsor=request.user,
-#             amount=amount,
-#             message=message,
-#             transaction_uuid=transaction_uuid,
-#             status='pending'
-#         )
-
-#         # Prepare data for signature (eSewa requires signed fields)
-#         # Example simple signature (replace with real logic if eSewa SDK/API requires)
-#         signed_fields = f"total_amount,transaction_uuid,product_code"
-#         data_string = f"{amount},{transaction_uuid},{product_code}"
-#         secret_key = settings.ESEWA_SECRET_KEY.encode()
-#         signature = base64.b64encode(hmac.new(secret_key, data_string.encode(), hashlib.sha256).digest()).decode()
-
-#         return render(request, 'sponsor_payment.html', {
-#             'total_amount': amount,
-#             'transaction_uuid': transaction_uuid,
-#             'product_code': product_code,
-#             'signature': signature,
-#             'success_url': request.build_absolute_uri('/esewa/success/'),
-#             'failure_url': request.build_absolute_uri('/esewa/fail/')
-#         })
-
-#     return redirect('fund_student')
 
 @login_required
 def sponsor_payment_process(request, student_id):
