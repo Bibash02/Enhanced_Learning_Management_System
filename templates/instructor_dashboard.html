@@ -166,7 +166,6 @@
             <h5>{{ course.title }}</h5>
             <p>{{ course.description|truncatewords:20 }}</p>
             <div class="d-flex flex-column gap-2">
-              <a href="{% url 'course_detail' course.id %}" class="btn btn-sm btn-primary">View</a>
               <a href="{% url 'course_edit' course.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
               <a href="{% url 'create_module' course.id %}" class="btn btn-sm btn-outline-success">Add Module</a>
               <a href="{% url 'create_lesson' course.id %}" class="btn btn-sm btn-outline-info">Add Lesson</a>

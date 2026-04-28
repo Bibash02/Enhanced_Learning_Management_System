@@ -10,6 +10,243 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <link rel="stylesheet" href="{% static 'css/sponsor_dashboard.css' %}">
+  <style>
+    /* ── Reset & Base ── */
+  * { box-sizing: border-box; }
+
+  body {
+      font-family: "Times New Roman", serif;
+      background: #f0f2f5;
+      color: #1a1f2e;
+      margin: 0;
+      padding: 0;
+      font-size: 18px;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 220px;
+      height: 100%;
+      background: #343a40;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 14px;
+      z-index: 100;
+      overflow-y: auto;
+  }
+
+  .sidebar h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+  }
+
+  .sidebar .sponsor-sub {
+      font-size: 18px;
+      color: #8b92a8;
+      margin-bottom: 28px;
+      display: block;
+  }
+
+  .sidebar a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      color: #8b92a8;
+      text-decoration: none;
+      font-size: 16px;
+      margin-bottom: 2px;
+      transition: background 0.15s, color 0.15s;
+  }
+
+  .sidebar a:hover {
+      background: gray;
+      color: #fff;
+  }
+
+  .sidebar a i { width: 16px; text-align: center; font-size: 13px; }
+
+  /* ── Main Content ── */
+  .main-content {
+      margin-left: 240px;
+      padding: 0;
+      min-height: 100vh;
+  }
+
+  /* ── Top Bar ── */
+  .topbar {
+      background: #fff;
+      padding: 18px 28px;
+      border-bottom: 1px solid #e8eaed;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+  }
+
+  .topbar h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+      color: #1a1f2e;
+  }
+
+  .topbar .date-label {
+      font-size: 12px;
+      color: #312c2c;
+      margin-top: 2px;
+  }
+
+  /* ── Content Wrapper ── */
+  .content-wrapper { padding: 24px 28px; }
+
+  /* ── Stat Cards ── */
+  .stat-card {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #e8eaed;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: box-shadow 0.2s;
+  }
+
+  .stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+
+  .stat-card .icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+  }
+
+  .stat-card.primary .icon { background: #e6f1fb; color: gray; }
+  .stat-card.success .icon { background: #eaf3de; color: gray; }
+  .stat-card.warning .icon { background: #faeeda; color: gray; }
+  .stat-card.info    .icon { background: #eeedfe; color: gray; }
+
+  .stat-card h3 {
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0;
+      color: #1a1f2e;
+  }
+
+  .stat-card p {
+      font-size: 15px;
+      color: black;
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+  }
+
+  /* ── Action Buttons ── */
+  .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+  }
+
+  .btn-custom {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 18px;
+      background: #1a1f2e;
+      color: #fff;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s;
+  }
+
+  .btn-custom:hover { background: gray; color: #fff; }
+
+  /* ── Section Header ── */
+  .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+  }
+
+  .section-header h2 {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0;
+      color: #1a1f2e;
+  }
+
+  /* ── Tables ── */
+  .table {
+      font-size: 13px;
+      border: 1px solid #e8eaed;
+      border-radius: 10px;
+      overflow: hidden;
+  }
+
+  .table thead th {
+      background: #f7f8fa;
+      color: #888;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #e8eaed;
+      padding: 10px 14px;
+  }
+
+  .table tbody td {
+      vertical-align: middle;
+      padding: 10px 14px;
+      border-color: #f0f2f5;
+      color: #1a1f2e;
+  }
+
+  .table-hover tbody tr:hover td { background: #f7f8fa; }
+
+  /* ── Badges ── */
+  .badge.bg-success { background: #eaf3de !important; color: #3b6d11 !important; }
+  .badge.bg-warning { background: #faeeda !important; color: #854f0b !important; }
+  .badge.bg-danger  { background: #fcebeb !important; color: #a32d2d !important; }
+
+  /* ── Progress ── */
+  .progress { background: #e8eaed; border-radius: 4px; }
+  .progress-bar.bg-success { background: #1a1f2e !important; border-radius: 4px; }
+
+  /* ── Buttons ── */
+  .btn-primary {
+      background: #1a1f2e;
+      border: none;
+      font-size: 12px;
+      border-radius: 6px;
+  }
+
+  .btn-primary:hover { background: gray; }
+
+  .btn-outline-secondary {
+      border-color: #d0d3d9;
+      color: #555;
+      font-size: 12px;
+      border-radius: 6px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+      .sidebar { width: 100%; height: auto; flex-direction: row; padding: 10px; overflow-x: auto; }
+      .sidebar a { margin-right: 6px; margin-bottom: 0; white-space: nowrap; }
+      .main-content { margin-left: 0; }
+      .topbar { padding: 14px 16px; }
+      .content-wrapper { padding: 16px; }
+  }
+  </style>
 </head>
 
 <body>

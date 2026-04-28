@@ -14,39 +14,53 @@
       margin: 0;
     }
 
-    /* Sidebar */
     .sidebar {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 250px;
+      top: 0; left: 0;
+      width: 220px;
       height: 100%;
       background: #343a40;
       color: #fff;
       display: flex;
       flex-direction: column;
-      padding: 20px;
-    }
+      padding: 24px 14px;
+      z-index: 100;
+      overflow-y: auto;
+  }
 
-    .sidebar h2 {
-      font-size: 22px;
-      margin-bottom: 30px;
-    }
-
-    .sidebar a {
+  .sidebar h2 {
+      font-size: 18px;
+      font-weight: 600;
       color: #fff;
-      text-decoration: none;
-      margin-bottom: 15px;
-      padding: 10px;
-      border-radius: 5px;
-      display: block;
-      font-weight: 500;
-      transition: background 0.3s ease;
-    }
+      margin-bottom: 4px;
+  }
 
-    .sidebar a:hover {
-      background: #495057;
-    }
+  .sidebar .sponsor-sub {
+      font-size: 18px;
+      color: #8b92a8;
+      margin-bottom: 28px;
+      display: block;
+  }
+
+  .sidebar a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      color: #8b92a8;
+      text-decoration: none;
+      font-size: 16px;
+      margin-bottom: 2px;
+      transition: background 0.15s, color 0.15s;
+  }
+
+  .sidebar a:hover {
+      background: gray;
+      color: #fff;
+  }
+
+  .sidebar a i { width: 16px; text-align: center; font-size: 13px; }
 
     .main-content {
       margin-left: 270px;

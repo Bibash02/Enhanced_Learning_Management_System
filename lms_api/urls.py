@@ -13,7 +13,7 @@ urlpatterns = [
     path('student/courses/enroll/<int:course_id>/', EnrollCourseAPIView.as_view(), name='enroll-course'),
     path('student/courses/my/', StudentCoursesAPIView.as_view(), name='my-courses'),
     path('student/courses/<int:course_id>/assignments/', CourseAssignmentsAPIView.as_view(), name='course-assignments'),
-    path('student/assignments/<int:assignment_id>/submit/', SubmitAssignmentAPIView.as_view(), name='submit-assignment'),
+    path('student/courses/<int:course_id>/assignments/<int:assignment_id>/submit/', SubmitAssignmentAPIView.as_view(), name='submit-assignment'),
     path('student/grades/', MyGradesAPIView.as_view(), name='my-grades'),
 
     path('instructor/courses/create/', CourseCreateAPIView.as_view(), name='create-course'),

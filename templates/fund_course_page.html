@@ -7,6 +7,7 @@
   <title>Fund Course</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <style>
@@ -18,22 +19,50 @@
     .sidebar {
       position: fixed;
       top: 0; left: 0;
-      width: 250px;
+      width: 220px;
       height: 100%;
       background: #343a40;
       color: #fff;
-      padding: 20px;
-    }
+      display: flex;
+      flex-direction: column;
+      padding: 24px 14px;
+      z-index: 100;
+      overflow-y: auto;
+  }
 
-    .sidebar a {
+  .sidebar h2 {
+      font-size: 18px;
+      font-weight: 600;
       color: #fff;
-      text-decoration: none;
+      margin-bottom: 4px;
+  }
+
+  .sidebar .sponsor-sub {
+      font-size: 18px;
+      color: #8b92a8;
+      margin-bottom: 28px;
       display: block;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 4px;
-    }
-    .sidebar a:hover { background: #495057; }
+  }
+
+  .sidebar a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      color: #8b92a8;
+      text-decoration: none;
+      font-size: 16px;
+      margin-bottom: 2px;
+      transition: background 0.15s, color 0.15s;
+  }
+
+  .sidebar a:hover {
+      background: gray;
+      color: #fff;
+  }
+
+  .sidebar a i { width: 16px; text-align: center; font-size: 13px; }
 
     .main-content {
       margin-left: 270px;
@@ -93,7 +122,6 @@
     <a href="{% url 'sponsor_dashboard' %}" class="active"><i class="fas fa-tachometer-alt"></i> Overview</a>
     <a href="{% url 'funding_history' %}"><i class="fas fa-history"></i> Funding History</a>
     <a href="{% url 'fund_student' %}"><i class="fas fa-user-plus"></i> Fund Student</a>
-    <a href="{% url 'fund_course_page' %}"><i class="fas fa-book"></i> Fund Course</a>
     <a href="{% url 'sponsor_profile' %}"><i class="fas fa-user-circle"></i> Profile</a>
     <a href="{% url 'signout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
   </div>
