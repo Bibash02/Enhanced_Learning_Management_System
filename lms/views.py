@@ -201,13 +201,20 @@ def course_detail(request, course_id):
     # Total sponsorship funding for this course
     total_funded = Funding.objects.filter(
         course=course,
+        student__user = request.user,
     ).aggregate(total=Sum('amount'))['total'] or 0
+
+    fundings = Funding.objects.filter(course=course, student__user = request.user)
 
     # Discounted price calculation
     discounted_price = float(course.price) - float(total_funded)
     if discounted_price < 0:
         discounted_price = 0
 
+    if discounted_price == 0 and not enrolled:
+        Enrollment.objects.get_or_create(student=request.user, course = course)
+        return redirect('course_detail', course_id=course.id)
+    
     # Handle enrollment POST request
     if request.method == 'POST' and not enrolled:
         Enrollment.objects.create(student=request.user, course=course)
@@ -217,8 +224,9 @@ def course_detail(request, course_id):
         'course': course,
         'modules': modules,
         'enrolled': enrolled,
-        'total_funded': total_funded,          # NEW
-        'discounted_price': discounted_price,  # NEW
+        'total_funded': total_funded,          
+        'discounted_price': discounted_price,  
+        'fundings': fundings,
     }
 
     return render(request, 'course_detail.html', context)
@@ -434,45 +442,45 @@ def lesson_detail(request, lesson_id):
     }
     return render(request, "lesson_detail.html", context)
 
-@login_required
-def assignment_list(request, course_id):
-    course = get_object_or_404(Course, id=course_id)
-    enrollment = get_object_or_404(Enrollment, student=request.user, course=course)
-    assignments = course.assignments.all()
-    context = {
-        'course': course,
-        'assignments': assignments,
-        'enrollment': enrollment,
-    }
-    return render(request, 'assignment_list.html', context)
+# @login_required
+# def assignment_list(request, course_id):
+#     course = get_object_or_404(Course, id=course_id)
+#     enrollment = get_object_or_404(Enrollment, student=request.user, course=course)
+#     assignments = course.assignments.all()
+#     context = {
+#         'course': course,
+#         'assignments': assignments,
+#         'enrollment': enrollment,
+#     }
+#     return render(request, 'assignment_list.html', context)
 
-@login_required
-def assignment_detail(request, course_id, assignment_id):
-    assignment = get_object_or_404(Assignment, id=assignment_id, course_id=course_id)
-    submission = Submission.objects.filter(assignment=assignment, student=request.user).first()
-    if request.method == 'POST':
-        form = SubmissionForm(request.POST, request.FILES)
-        if form.is_valid():
-            if submission:
-                submission.content = form.cleaned_data['content']
-                submission.file = form.cleaned_data['file'] or submission.file
-                submission.save()
-                messages.success(request, 'Submission updated successfully!')
-            else:
-                submission = form.save(commit=False)
-                submission.assignment = assignment
-                submission.student = request.user
-                submission.save()
-                messages.success(request, 'Assignment submitted successfully!')
-            return redirect('assignment_detail', course_id=course_id, assignment_id=assignment_id)
-    else:
-        form = SubmissionForm(instance=submission)
-    context = {
-        'assignment': assignment,
-        'submission': submission,
-        'form': form,
-    }
-    return render(request, 'assignment_detail.html', context)
+# @login_required
+# def assignment_detail(request, course_id, assignment_id):
+#     assignment = get_object_or_404(Assignment, id=assignment_id, course_id=course_id)
+#     submission = Submission.objects.filter(assignment=assignment, student=request.user).first()
+#     if request.method == 'POST':
+#         form = SubmissionForm(request.POST, request.FILES)
+#         if form.is_valid():
+#             if submission:
+#                 submission.content = form.cleaned_data['content']
+#                 submission.file = form.cleaned_data['file'] or submission.file
+#                 submission.save()
+#                 messages.success(request, 'Submission updated successfully!')
+#             else:
+#                 submission = form.save(commit=False)
+#                 submission.assignment = assignment
+#                 submission.student = request.user
+#                 submission.save()
+#                 messages.success(request, 'Assignment submitted successfully!')
+#             return redirect('assignment_detail', course_id=course_id, assignment_id=assignment_id)
+#     else:
+#         form = SubmissionForm(instance=submission)
+#     context = {
+#         'assignment': assignment,
+#         'submission': submission,
+#         'form': form,
+#     }
+#     return render(request, 'assignment_detail.html', context)
 
 @login_required
 def assignment_delete(request, assignment_id):
@@ -540,6 +548,9 @@ def student_dashboard(request):
 
     # 2. Get assignments of those courses
     assignments = Assignment.objects.filter(course_id__in=enrolled_course_ids)
+
+    today = timezone.now().date()
+    assignments = assignments.filter(due_date__gte=today)
 
     # 3. Get student submissions
     submitted_assignments = Submission.objects.filter(
@@ -1696,6 +1707,9 @@ def pending_assignments(request):
     # Get assignments for those courses
     assignments = Assignment.objects.filter(course_id__in=enrolled_courses)
 
+    today = timezone.now().date()
+    assignments = assignments.filter(due_date__gte=today)
+
     # Exclude assignments the student has already submitted
     submitted_assignments = Submission.objects.filter(student=request.user).values_list('assignment_id', flat=True)
     pending_assignments = assignments.exclude(id__in=submitted_assignments)
@@ -1951,6 +1965,7 @@ def sponsor_payment_process(request, student_id):
         funding = Funding.objects.create(
             student=student,
             sponsor=request.user,
+            course = course,
             amount=amount,
             message=f"Funding by {request.user.username} for {student.user.get_full_name()}"
         )
@@ -1959,6 +1974,7 @@ def sponsor_payment_process(request, student_id):
         transaction_uuid = str(uuid.uuid4())
         order = Order.objects.create(
             user=request.user,
+            course=course,
             amount=amount,
             full_name=request.POST.get("name", request.user.get_full_name()),
             email=request.POST.get("email", request.user.email),
@@ -1967,7 +1983,7 @@ def sponsor_payment_process(request, student_id):
             city=request.POST.get("city", ""),
             country="Nepal",
             payment_type="esewa",
-            status="Pending",
+            status="Sponsored",
             transaction_uuid=transaction_uuid
         )
 

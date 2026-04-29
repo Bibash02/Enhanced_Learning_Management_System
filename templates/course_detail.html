@@ -140,7 +140,7 @@
   <!-- Sidebar -->
   <div class="sidebar">
     <h2>{{ user.first_name }}'s Dashboard</h2>
-    <a href="#">Overview</a>
+    <a href="{% url 'student_dashboard' %}">Overview</a>
     <a href="{% url 'course_list' %}">Browse Courses</a>
     <a href="{% url 'enrolled_course' %}">Enrolled Courses</a>
     <a href="{% url 'pending_assignments' %}">Pending Assignments</a>
@@ -225,38 +225,58 @@
     <div class="col-md-4">
       <div class="card mb-4 course-card">
         <div class="card-body text-center">
+
           {% if total_funded > 0 %}
             <div class="alert alert-info text-start">
-                <strong>Sponsors funded: Rs. {{ total_funded }}</strong><br>
-                <small>This course is now discounted!</small>
+              🎁 <strong>You received sponsorship: Rs. {{ total_funded }}</strong><br>
+              <small>This discount is applied only for you.</small>
             </div>
 
-            <h4>
-                <span class="text-danger text-decoration-line-through">
-                    Rs.{{ course.price }}
-                </span>
-            </h4>
+            {% if discounted_price == 0 %}
+              <div class="alert alert-success text-start">
+                🎉 This course is fully sponsored for you!
+              </div>
+            {% endif %}
+
+            <h5 class="text-muted text-decoration-line-through">
+              Rs.{{ course.price }}
+            </h5>
 
             <h3 class="text-success">Rs.{{ discounted_price }}</h3>
+
           {% else %}
-              <h3 class="text">Rs.{{ course.price }}</h3>
+            <h3>Rs.{{ course.price }}</h3>
           {% endif %}
 
-          {% if is_enrolled %}
+          {% if enrolled %}
+            <div class="alert alert-success">
+              <i class="fas fa-check-circle"></i> You are enrolled
+            </div>
 
-          <div class="alert alert-success">
-            <i class="fas fa-check-circle"></i> You are enrolled
-          </div>
-          <a href="{% url 'course_content' course.id %}" class="btn btn-success w-100 mb-2">Continue Learning</a>
+            <a href="{% url 'course_learn' course.id %}" class="btn btn-success w-100 mb-2">
+              Continue Learning
+            </a>
+
           {% else %}
-          <form method="get" action="{% url 'checkout' course.id %}">
-            <input type="hidden" name="course_id" value="{{ course.id }}">
-            <button type="submit" class="btn btn-primary w-100 mb-2">
-              <i class="fas fa-shopping-cart"></i> Enroll Now
-            </button>
-          </form>
+            {% if discounted_price == 0 %}
+              <form method="post" action="">
+                {% csrf_token %}
+                <button class="btn btn-success w-100">
+                  Enroll Free
+                </button>
+              </form>
+            {% else %}
+              <form method="get" action="{% url 'checkout' course.id %}">
+                <input type="hidden" name="amount" value="{{ discounted_price }}">
+                <button class="btn btn-primary w-100">
+                  Pay Remaining: Rs {{ discounted_price }}
+                </button>
+              </form>
+            {% endif %}
           {% endif %}
+
           <small class="text-muted">Money-back guarantee</small>
+
         </div>
 
         <!-- Instructor Info -->

@@ -260,6 +260,7 @@ class Order(models.Model):
         ('Completed', 'Completed'),
         ('Failed', 'Failed'),
         ('Cancelled', 'Cancelled'),
+        ('Sponsored', 'Sponsored'),
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
