@@ -9,7 +9,7 @@ class UserProfile(models.Model):
         ('sponsor', 'Sponsor')
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='images/', default='images/pic1.jpg')
+    image = models.ImageField(upload_to='profile_images/', default='images/pic1.jpg')
     #bio = models.TextField(blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
 

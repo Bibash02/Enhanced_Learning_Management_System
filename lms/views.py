@@ -697,6 +697,7 @@ def funding_history(request):
 # Fund a student
 @login_required
 def fund_student(request):
+    courses = Course.objects.all()
     # Ensure only sponsors can access this page
     try:
         user_profile = request.user.userprofile
@@ -712,7 +713,8 @@ def fund_student(request):
     
     context = {
         'students': students,
-        'sponsor_name': user_profile.user.first_name or user_profile.user.username,  # Fallback to username
+        'courses': courses,
+        'sponsor_name': user_profile.user.first_name or user_profile.user.username,  
     }
     return render(request, 'fund_student.html', context)
 
@@ -729,15 +731,41 @@ def fund_student_detail(request, student_id):
 
     if request.method == "POST":
         amount = request.POST.get('amount')
-        course_id = request.POST.get('course')
+        course = request.POST.get('course')
 
         Sponsorship.objects.create(
             sponsor=sponsor,
             student=student,
-            course_id=course_id,
+            course=course,
             funded_amount=amount
         )
+
+        if student.email:
+            send_mail(
+                subject="🎉 You received sponsorship!",
+                message=f"""
+                        Hello {student.first_name or student.username},
+
+                        Congratulations! 🎉
+
+                        You have received sponsorship from {user.first_name or user.username}.
+
+                        📚 Course: {course.title}
+                        💰 Amount: NPR {amount}
+
+                        Keep learning and growing 🚀
+
+                        Best regards,
+                        LMS Team
+                        """,
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[student.email],
+                fail_silently=False,
+            )
+
+        messages.success(request, f"You have successfully funded {student.first_name or student.username}")
         return redirect('sponsor_dashboard')
+    
 
     courses = student.enrollments.all()
     return render(request, 'fund_student_detail.html', {
@@ -884,9 +912,7 @@ def fund_course_payment_process(request, course_id):
             messages.error(request, "Invalid funding amount.")
             return redirect("fund_course_checkout", course_id=course_id)
 
-        # =======================
         # 1. Create Funding entry
-        # =======================
         funding = Funding.objects.create(
             sponsor=sponsor,
             course=course,
@@ -895,9 +921,7 @@ def fund_course_payment_process(request, course_id):
             funded_at=timezone.now()
         )
 
-        # =======================
         # 2. Create Order entry
-        # =======================
         transaction_uuid = str(uuid.uuid4())
 
         order = Order.objects.create(
@@ -915,9 +939,7 @@ def fund_course_payment_process(request, course_id):
             transaction_uuid=transaction_uuid,
         )
 
-        # =======================
         # 3. eSewa Signature Logic
-        # =======================
         product_code = settings.ESEWA_PRODUCT_CODE
         secret_key = settings.ESEWA_SECRET_KEY
 
@@ -931,9 +953,7 @@ def fund_course_payment_process(request, course_id):
             hmac.new(secret_key.encode(), data_string.encode(), hashlib.sha256).digest()
         ).decode()
 
-        # =======================
         # 4. Success / Failure URLs
-        # =======================
         success_url = request.build_absolute_uri(
             reverse("fund_course_esewa_success", args=[order.id])
         )
@@ -941,9 +961,7 @@ def fund_course_payment_process(request, course_id):
             reverse("fund_course_esewa_fail", args=[order.id])
         )
 
-        # =======================
         # 5. Render Auto-submit Form
-        # =======================
         context = {
             "order": order,
             "course": course,
@@ -1011,7 +1029,6 @@ def fund_course_esewa_success(request, order_id):
     messages.success(request, f"Successfully funded course: {order.course.title}")
     return redirect("fund_course_page")
 
-
 @login_required
 def fund_course_esewa_fail(request, order_id):
     order = get_object_or_404(Order, id=order_id)
@@ -1030,7 +1047,6 @@ def fund_course_esewa_fail(request, order_id):
 
     messages.error(request, f"Payment failed for course: {order.course.title}")
     return redirect("fund_course_page")
-
 
 @login_required
 def course_create(request):
@@ -1867,8 +1883,8 @@ def instructor_submission_detail(request, submission_id):
             send_mail(
                 subject,
                 message,
-                "instructor@example.com",  # from
-                [student_email],       # to
+                "instructor@example.com",  
+                [student_email],       
                 fail_silently=False,
             )
 
@@ -1885,7 +1901,13 @@ def sponsor_checkout(request, student_id):
     student = get_object_or_404(UserProfile, id=student_id, role='student')
 
     if request.method == "POST":
-        amount = request.POST.get("amount")
+        amount = request.POST.get("amount") 
+        course_id = request.POST.get("course")
+
+        if not course_id:
+            messages.error(request, "Please select a course.")
+            return redirect('fund_student')
+        
         if not amount or float(amount) <= 0:
             messages.error(request, "Invalid amount.")
             return redirect('fund_student')
@@ -1893,7 +1915,8 @@ def sponsor_checkout(request, student_id):
         # Pass data to checkout template
         return render(request, "sponsor_checkout.html", {
             "student": student,
-            "amount": amount
+            "amount": amount,
+            "course_id": course_id
         })
 
     # If accessed via GET, redirect back
@@ -1913,6 +1936,13 @@ def sponsor_payment_process(request, student_id):
     if request.method == "POST":
         # Get amount from form
         amount = request.POST.get("amount")
+        course_id = request.POST.get("course_id")
+
+        if not course_id:
+            messages.error(request, "Please select a course.")
+            return redirect("fund_student")
+        
+        course = get_object_or_404(Course, id=course_id)
         if not amount or float(amount) <= 0:
             messages.error(request, "Enter a valid funding amount.")
             return redirect(request.path)
@@ -1969,7 +1999,8 @@ def sponsor_payment_process(request, student_id):
             "success_url": success_url,
             "failure_url": failure_url,
             "student": student,
-            "amount": total_amount
+            "amount": total_amount,
+            "course": course,
         })
 
     # If GET request → redirect to fund_student

@@ -103,6 +103,15 @@
     <a href="{% url 'signout' %}"><i class="fas fa-sign-out-alt"></i>Logout</a>
   </div>
 
+
+  {% if messages %}
+    <div class="container mt-3">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
   <!-- Main Content -->
   <div class="main-content">
     <h1>Fund {{ student.first_name }} {{ student.last_name }}</h1>

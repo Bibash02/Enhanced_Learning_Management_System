@@ -37,6 +37,7 @@
 
       <!-- Hidden fields for funding -->
       <input type="hidden" name="student_id" value="{{ student.id }}">
+      <input type="hidden" name="course_id" value="{{ course_id }}">
       <input type="hidden" name="amount" value="{{ amount }}">
       <input type="hidden" name="message" value="Funding for {{ student.user.get_full_name }}">
 

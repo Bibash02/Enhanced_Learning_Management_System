@@ -17,7 +17,7 @@ urlpatterns = [
     path('student/dashboard', student_dashboard, name='student_dashboard'),
     path('instructor/dashboard', instructor_dashboard, name='instructor_dashboard'),
     path('sponsor/dashboard', sponsor_dashboard, name='sponsor_dashboard'),
-    path('sponsor/fund_student', fund_student, name='fund_student'),
+    path('sponsor/fund-student', fund_student, name='fund_student'),
     path('fund_student_detail/<int:student_id>', fund_student_detail, name='fund_student_detail'),
     path('fund_course_action/<int:student_id>', fund_student_action, name='fund_course_action'),
     path('sponsor/fund-course/', fund_course_page, name='fund_course_page'),
@@ -28,7 +28,7 @@ urlpatterns = [
 
     path('instructor/course_create', course_create, name='course_create'),
     path('instructor/course_edit/<int:course_id>', course_edit, name='course_edit'),
-    path('courses/<int:course_id>/', course_detail, name='course_detail'),
+    path('student/courses/<int:course_id>/', course_detail, name='course_detail'),
     path('course_delete/<int:course_id>', course_delete, name='course_delete'),
     path('course_content/<int:course_id>', course_content, name='course_content'),
 

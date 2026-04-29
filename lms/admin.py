@@ -112,7 +112,14 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(Funding)
 class FundingAdmin(admin.ModelAdmin):
-    list_display = ['sponsor', 'student', 'course', 'amount', 'message', 'funded_at']
+    list_display = ['id', 'sponsor', 'student', 'course', 'amount', 'message', 'funded_at', 'status']
     list_filter = ['funded_at']
     search_fields = ['sponsor__user__username', 'student__user__username', 'course__title']
+    list_per_page = 10
+
+@admin.register(Sponsorship)
+class SponsorshipAdmin(admin.ModelAdmin):
+    list_display = ['sponsor', 'student', 'course', 'funded_amount', 'created_at', 'status']
+    list_filter = ['status', 'course']
+    search_fields = ['sponsor__user__username', 'student__user_username']
     list_per_page = 10
