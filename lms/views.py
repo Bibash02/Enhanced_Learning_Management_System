@@ -2,7 +2,6 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
-import re
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
@@ -15,11 +14,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import login, logout, authenticate
 from django.db.models import Sum
 import uuid
-from django.db import IntegrityError
 from django.core.paginator import Paginator
 from decimal import Decimal
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
 import uuid
 import hmac
 import hashlib
@@ -38,7 +34,7 @@ def signup(request):
         password = request.POST.get("password")
         confirm_password = request.POST.get("confirm_password")
         role = request.POST.get("role")
-        image = request.FILES.get("image")
+        image = request.FILES.get("profile_image")
 
         if password != confirm_password:
             messages.error(request, "Password do not match!")
@@ -124,7 +120,7 @@ def signin(request):
             login(request, user)
 
             # get role from userprofile
-            role = user.userprofile.role
+            role = user.profile.role
             if role == 'student':
                 return redirect('student_dashboard')
             elif role == 'instructor':
@@ -645,8 +641,64 @@ def sponsor_profile(request):
     return render(request, 'sponsor_profile.html', context)
 
 @login_required
-def update_sponosr_profile(request):
-    return render(request, 'update_sponsor_profile.html')
+def update_sponsor_profile(request):
+    user = request.user
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+
+    if request.method == 'POST':
+        user_form = SponsorUserForm(request.POST, instance=user)
+        profile_form = SponsorProfileForm(request.POST, request.FILES, instance=profile)
+        password_form = PasswordUpdateForm(request.POST)
+
+        if user_form.is_valid() and profile_form.is_valid() and password_form.is_valid():
+
+            # Save user directly (clean way)
+            user_form.save()
+
+            # Save profile (image + other fields)
+            profile_form.save()
+
+            # Password update logic
+            current_password = password_form.cleaned_data.get('current_password')
+            new_password = password_form.cleaned_data.get('new_password')
+            confirm_password = password_form.cleaned_data.get('confirm_password')
+
+            if current_password or new_password or confirm_password:
+
+                if not (current_password and new_password and confirm_password):
+                    messages.error(request, "Please fill all password fields.")
+                    return redirect('update_sponsor_profile')
+
+                if not user.check_password(current_password):
+                    messages.error(request, "Current password is incorrect.")
+                    return redirect('update_sponsor_profile')
+
+                if new_password != confirm_password:
+                    messages.error(request, "Passwords do not match.")
+                    return redirect('update_sponsor_profile')
+
+                user.set_password(new_password)
+                user.save()
+                update_session_auth_hash(request, user)
+
+                messages.success(request, "Password updated successfully!")
+
+            messages.success(request, "Sponsor profile updated successfully!")
+            return redirect('sponsor_profile')
+
+        else:
+            messages.error(request, "Please fix the errors.")
+
+    else:
+        user_form = SponsorUserForm(instance=user)
+        profile_form = SponsorProfileForm(instance=profile)
+        password_form = PasswordUpdateForm()
+
+    return render(request, 'update_sponsor_profile.html', {
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'password_form': password_form,
+    })
 
 def renew_sponsorship(request, student_id):
     pass
@@ -1626,7 +1678,7 @@ def student_profile(request):
 @login_required
 def update_student_profile(request):
     user = request.user
-    profile, _ = UserProfile.objects.get_or_create(user=user)  # ensure profile exists
+    profile, _ = UserProfile.objects.get_or_create(user=user)  
 
     if request.method == 'POST':
         user_form = UserUpdateForm(request.POST, instance=user)
@@ -1636,7 +1688,7 @@ def update_student_profile(request):
         # Validate forms
         if user_form.is_valid() and profile_form.is_valid() and password_form.is_valid():
 
-            # 1Update user fields if filled
+            # Update user fields if filled
             user_data = user_form.cleaned_data
             if user_data.get('first_name'):
                 user.first_name = user_data['first_name']
@@ -1739,11 +1791,12 @@ def completed_courses(request):
 
 @login_required
 def instructor_profile(request):
-    return render(request, 'instructor_profile.html')
+    instructor = request.user
+    return render(request, 'instructor_profile.html', {'instructor': instructor})
 
 def update_instructor_profile(request):
     user = request.user
-    profile = user.userprofile  # Or user.instructorprofile if you created one
+    profile = user.profile 
 
     if request.method == "POST":
         user_form = InstructorUserForm(request.POST, instance=user)
@@ -1961,7 +2014,7 @@ def sponsor_payment_process(request, student_id):
             messages.error(request, "Enter a valid funding amount.")
             return redirect(request.path)
 
-        # 1️⃣ Save minimal Funding record
+        # Save minimal Funding record
         funding = Funding.objects.create(
             student=student,
             sponsor=request.user,
@@ -1970,7 +2023,7 @@ def sponsor_payment_process(request, student_id):
             message=f"Funding by {request.user.username} for {student.user.get_full_name()}"
         )
 
-        # 2️⃣ Create Order record
+        # Create Order record
         transaction_uuid = str(uuid.uuid4())
         order = Order.objects.create(
             user=request.user,
@@ -1991,7 +2044,7 @@ def sponsor_payment_process(request, student_id):
         funding.order = order
         funding.save()
 
-        # 3️⃣ Prepare eSewa signature
+        # Prepare eSewa signature
         product_code = settings.ESEWA_PRODUCT_CODE
         total_amount = str(amount)
         signed_fields = "total_amount,transaction_uuid,product_code"
@@ -2001,11 +2054,11 @@ def sponsor_payment_process(request, student_id):
             hmac.new(settings.ESEWA_SECRET_KEY.encode(), data_string.encode(), hashlib.sha256).digest()
         ).decode()
 
-        # 4️⃣ Dynamic URLs for redirect
+        # Dynamic URLs for redirect
         success_url = request.build_absolute_uri(reverse('sponsor_payment_success'))
         failure_url = request.build_absolute_uri(reverse('sponsor_payment_fail'))
 
-        # 5️⃣ Render eSewa redirect page
+        # Render eSewa redirect page
         return render(request, "sponsor_payment.html", {
             "total_amount": total_amount,
             "transaction_uuid": transaction_uuid,

@@ -67,7 +67,7 @@
 
 <div class="container">
     <div class="update-card">
-        <h2>Update Profile</h2>
+        <h2>Update Sponsor Profile</h2>
 
         {% if messages %}
         <div class="messages">
@@ -87,19 +87,27 @@
             <!-- Profile Image -->
             <h4>Profile Image</h4>
             {{ profile_form.as_p }}
-            {% if user.userprofile.image %}
-                <img src="{{ user.userprofile.image.url }}" alt="Profile Image" class="profile-image-preview">
-            {% endif %}
 
-            <!-- <h4>Bio</h4>
-            <textarea name="bio" class="form-control" rows="4">{{ profile_form.instance.bio }}</textarea> -->
+            {% if user.profile.image %}
+                <img src="{{ user.profile.image.url }}" 
+                     alt="Profile Image" 
+                     class="profile-image-preview"
+                     style="width:120px;height:120px;border-radius:50%;">
+            {% endif %}
 
             <!-- Password Update -->
             <h4>Change Password</h4>
             {{ password_form.as_p }}
 
-            <button type="submit" class="btn-submit mt-3">Update Profile</button><br><br>
-            <a href="{% url 'student_profile' %}" class="btn btn-secondary flex-grow-1 w-100" style="border-radius: 8px;">Cancel</a>
+            <button type="submit" class="btn-submit mt-3">
+                Update Profile
+            </button><br><br>
+
+            <a href="{% url 'sponsor_profile' %}" 
+               class="btn btn-secondary w-100">
+               Cancel
+            </a>
+
         </form>
     </div>
 </div>

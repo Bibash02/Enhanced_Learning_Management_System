@@ -8,7 +8,7 @@ class UserProfile(models.Model):
         ('instructor', 'Instructor'),
         ('sponsor', 'Sponsor')
     ]
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     image = models.ImageField(upload_to='profile_images/', default='images/pic1.jpg')
     #bio = models.TextField(blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)

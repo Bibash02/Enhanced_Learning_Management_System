@@ -136,3 +136,16 @@ class InstructorProfileForm(forms.ModelForm):
 
 class InstructorPasswordForm(PasswordChangeForm):
     pass
+
+class SponsorUserForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']
+
+class SponsorProfileForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = ['image']
+
+class SponsorPasswordForm(PasswordChangeForm):
+    pass

@@ -62,7 +62,7 @@ urlpatterns = [
     path('fund_course_esewa_fail/<int:order_id>', fund_course_esewa_fail, name='fund_course_esewa_fail'),
 
     path('sponsor/sponsor_profile', sponsor_profile, name='sponsor_profile'),
-    path('sponsor/update_sponsor_profile', update_sponosr_profile, name='update_sponsor_profile'),
+    path('sponsor/update_sponsor_profile', update_sponsor_profile, name='update_sponsor_profile'),
     path('sponsor/sponsor_checkout/<int:student_id>/', sponsor_checkout, name='sponsor_checkout'),
     path('sponsor/sponsor_payment_process/<int:student_id>/', sponsor_payment_process, name='sponsor_payment_process'),
     path('sponsor/sponsor_payment/success/', sponsor_payment_success, name='sponsor_payment_success'),
