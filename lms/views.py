@@ -20,6 +20,7 @@ import uuid
 import hmac
 import hashlib
 import base64
+from django.db import transaction
 import json
 from django.conf import settings
 from django.core.mail import send_mail
@@ -763,7 +764,7 @@ def fund_student(request):
     courses = Course.objects.all()
     # Ensure only sponsors can access this page
     try:
-        user_profile = request.user.userprofile
+        user_profile = request.user.profile
         if user_profile.role != 'sponsor':
             messages.error(request, "You do not have permission to access this page.")
             return redirect('sponsor_dashboard')  # Or appropriate redirect
@@ -1343,8 +1344,14 @@ def generate_signature(total_amount, transaction_uuid, product_code, secret_key)
     """
     # ensure consistent formatting (use same types, no extra spaces)
     message = f"total_amount={total_amount},transaction_uuid={transaction_uuid},product_code={product_code}"
-    digest = hmac.new(secret_key.encode('utf-8'), message.encode('utf-8'), hashlib.sha256).digest()
-    return base64.b64encode(digest).decode('utf-8')
+
+    hmac_sha256 = hmac.new(
+        secret_key.encode(),
+        message.encode(),
+        hashlib.sha256
+    ).digest()
+
+    return base64.b64encode(hmac_sha256).decode()
 
 @login_required
 def checkout(request, course_id):
@@ -1377,7 +1384,7 @@ def checkout(request, course_id):
 #     total_amount = (amount + service_charge).quantize(Decimal('0.01'))
 #     payment_type = request.POST.get("payment_type")
 
-#     # Get the Course object (required for ForeignKey)
+#     # Get the Course object
 #     course = get_object_or_404(Course, id=course_id)
 
 #     transaction_uuid = str(uuid.uuid4())
@@ -1389,31 +1396,33 @@ def checkout(request, course_id):
 #         address=address,
 #         city=city,
 #         country=country,
-#         course=course,             # Pass the Course instance
+#         course=course,
 #         amount=total_amount,
 #         payment_type=payment_type,
 #         transaction_uuid=transaction_uuid,
 #         status="Pending",
 #     )
 
-#     # COD: show success page (or order confirmation)
+#     # Save order id in session for success page
+#     request.session["current_order_id"] = order.id
+
 #     if payment_type == "cod":
-#         order.status = "Pending"  # or "COD Pending"
+#         order.status = "Pending"
 #         order.save()
 #         return render(request, 'esewa_success.html', {'order': order})
 
-#     # eSewa: prepare signature and redirect form template
 #     if payment_type == "esewa":
 #         product_code = getattr(settings, "ESEWA_PRODUCT_CODE", "EPAYTEST")
 #         secret_key = getattr(settings, "ESEWA_SECRET_KEY", "")
 #         signature = generate_signature(total_amount, transaction_uuid, product_code, secret_key)
-#         success_url = request.build_absolute_uri(reverse('payment_success')) + "?"
-#         failure_url = request.build_absolute_uri(reverse('payment_fail')) + "?"
+
+#         # session-based success URL
+#         success_url = request.build_absolute_uri(reverse('payment_success'))
+#         failure_url = request.build_absolute_uri(reverse('payment_fail'))
 
 #         context = {
 #             'order': order,
-#             'amount': amount,               # original product amount (optional)
-#             'total_amount': total_amount,   # must be used in form and signature
+#             'total_amount': total_amount,
 #             'transaction_uuid': transaction_uuid,
 #             'product_code': product_code,
 #             'signature': signature,
@@ -1422,39 +1431,124 @@ def checkout(request, course_id):
 #         }
 #         return render(request, 'esewa_payment.html', context)
 
-#     # fallback
 #     return redirect('checkout', course_id=course_id)
+
+# @login_required
+# def payment_success(request):
+#     order_id = request.session.get("current_order_id")
+#     if not order_id:
+#         return render(request, "esewa_failed.html", {"message": "Order info missing."})
+
+#     try:
+#         order = Order.objects.get(id=order_id, user=request.user)
+#     except Order.DoesNotExist:
+#         return render(request, "esewa_failed.html", {"message": "Order not found."})
+
+#     # Optionally verify with eSewa API here if needed
+#     order.status = "Completed"  # mark as success
+#     order.transaction_ref_id = request.GET.get("refId", "")  # refId optional in session method
+#     order.save()
+
+#     # Create Enrollment
+#     enrollment, created = Enrollment.objects.get_or_create(
+#         student=request.user,
+#         course=order.course
+#     )
+
+#     # Clear session
+#     if "current_order_id" in request.session:
+#         del request.session["current_order_id"]
+
+#     return redirect("enrolled_course", course_id=order.course.id)
+
+# @login_required
+# def process_payment(request):
+#     if request.method != "POST":
+#         return redirect("home")
+
+#     user = request.user
+#     course_id = request.POST.get("course_id")
+#     payment_type = request.POST.get("payment_type")
+
+#     course = get_object_or_404(Course, id=course_id)
+
+#     service_charge = Decimal('50.00')
+#     total_amount = (Decimal(course.price) + service_charge).quantize(Decimal('0.01'))
+
+#     transaction_uuid = str(uuid.uuid4())
+
+#     order = Order.objects.create(
+#         user=user,
+#         course=course,
+#         full_name=request.POST.get("name"),
+#         email=request.POST.get("email"),
+#         phone=request.POST.get("phone"),
+#         address=request.POST.get("address"),
+#         city=request.POST.get("city"),
+#         country="Nepal",
+#         amount=total_amount,
+#         payment_type=payment_type,
+#         transaction_uuid=transaction_uuid,
+#         status="Pending",
+#     )
+
+#     # ---------------- COD ----------------
+#     if payment_type == "cod":
+#         order.status = "Pending"
+#         order.save()
+#         return redirect("enrolled_learning", course_id=course.id)
+
+#     # ---------------- ESEWA ----------------
+#     if payment_type == "esewa":
+#         product_code = settings.ESEWA_PRODUCT_CODE
+#         secret_key = settings.ESEWA_SECRET_KEY
+
+#         signature = generate_signature(total_amount, transaction_uuid, product_code, secret_key)
+
+#         BASE_URL = "https://your-ngrok-url.ngrok-free.app"
+
+#         # PASS ORDER ID IN URL (IMPORTANT)
+#         success_url = f"{BASE_URL}/student/payment/success/?order_id={order.id}"
+#         failure_url = f"{BASE_URL}/student/payment/fail/?order_id={order.id}"
+
+#         return render(request, "esewa_payment.html", {
+#             "total_amount": total_amount,
+#             "transaction_uuid": transaction_uuid,
+#             "product_code": product_code,
+#             "signature": signature,
+#             "success_url": success_url,
+#             "failure_url": failure_url,
+#         })
+
+#     return redirect("checkout")
 
 @login_required
 def process_payment(request):
     if request.method != "POST":
-        return redirect('checkout', course_id=request.POST.get('course_id') or "")
+        return redirect("checkout")
 
     user = request.user
-    full_name = request.POST.get("name")
-    email = request.POST.get("email")
-    phone = request.POST.get("phone")
-    address = request.POST.get("address")
-    city = request.POST.get("city")
-    country = request.POST.get("country", "Nepal")
+
     course_id = request.POST.get("course_id")
-    amount = Decimal(request.POST.get("amount") or '0.00')
-    service_charge = Decimal('50.00')
-    total_amount = (amount + service_charge).quantize(Decimal('0.01'))
+    amount = Decimal(request.POST.get("amount") or "0.00")
+
+    service_charge = Decimal("50.00")
+    total_amount = (amount + service_charge).quantize(Decimal("0.01"))
+
     payment_type = request.POST.get("payment_type")
 
-    # Get the Course object
     course = get_object_or_404(Course, id=course_id)
 
     transaction_uuid = str(uuid.uuid4())
+
     order = Order.objects.create(
         user=user,
-        full_name=full_name,
-        email=email,
-        phone=phone,
-        address=address,
-        city=city,
-        country=country,
+        full_name=request.POST.get("name"),
+        email=request.POST.get("email"),
+        phone=request.POST.get("phone"),
+        address=request.POST.get("address"),
+        city=request.POST.get("city"),
+        country="Nepal",
         course=course,
         amount=total_amount,
         payment_type=payment_type,
@@ -1462,133 +1556,117 @@ def process_payment(request):
         status="Pending",
     )
 
-    # Save order id in session for success page
-    request.session["current_order_id"] = order.id
-
+    # COD
     if payment_type == "cod":
         order.status = "Pending"
         order.save()
-        return render(request, 'esewa_success.html', {'order': order})
 
+        Enrollment.objects.get_or_create(
+            student=user,
+            course=course
+        )
+
+        return redirect("enrolled_course", course_id=course.id)
+
+    # eSewa V2
     if payment_type == "esewa":
-        product_code = getattr(settings, "ESEWA_PRODUCT_CODE", "EPAYTEST")
-        secret_key = getattr(settings, "ESEWA_SECRET_KEY", "")
-        signature = generate_signature(total_amount, transaction_uuid, product_code, secret_key)
+        product_code = settings.ESEWA_PRODUCT_CODE
+        secret_key = settings.ESEWA_SECRET_KEY
 
-        # session-based success URL
-        success_url = request.build_absolute_uri(reverse('payment_success'))
-        failure_url = request.build_absolute_uri(reverse('payment_fail'))
+        signature = generate_signature(
+            str(total_amount),
+            transaction_uuid,
+            product_code,
+            secret_key
+        )
 
         context = {
-            'order': order,
-            'total_amount': total_amount,
-            'transaction_uuid': transaction_uuid,
-            'product_code': product_code,
-            'signature': signature,
-            'success_url': success_url,
-            'failure_url': failure_url,
+            "total_amount": total_amount,
+            "transaction_uuid": transaction_uuid,
+            "product_code": product_code,
+            "signature": signature,
+            "success_url": request.build_absolute_uri(reverse("payment_success")),
+            "failure_url": request.build_absolute_uri(reverse("payment_fail")),
         }
-        return render(request, 'esewa_payment.html', context)
 
-    return redirect('checkout', course_id=course_id)
+        return render(request, "esewa_payment.html", context)
 
-# @login_required
-# def payment_success(request):
-#     # eSewa returns:
-#     # ?oid=transaction_uuid & amt=amount & refId=reference_id
-#     oid = request.GET.get("oid")
-#     amt = request.GET.get("amt")
-#     ref_id = request.GET.get("product_code")
-
-#     # Basic validation
-#     if not oid:
-#         return render(request, "esewa_failed.html", {"message": "Invalid payment data."})
-
-#     try:
-#         order = Order.objects.get(transaction_uuid=oid, user=request.user)
-#     except Order.DoesNotExist:
-#         return render(request, "esewa_failed.html", {"message": "Order not found."})
-
-#     verify_url = "https://rc-epay.esewa.com.np/api/epay/transaction/status/"
-#     payload = {
-#         "product_code": "EPAYTEST",   # Your real code in production (eSewa प्रदान गर्ने)
-#         "total_amount": str(order.amount),
-#         "transaction_uuid": oid,
-#     }
-
-#     try:
-#         response = requests.post(verify_url, json=payload)
-#         data = response.json()
-#     except:
-#         return render(request, "esewa_failed.html", {"message": "eSewa verification failed."})
-
-#     if data.get("status") != "COMPLETE":
-#         return render(request, "esewa_failed", {"message": "Payment not verified with eSewa."})
-
-#     order.status = "Success"
-#     order.transaction_ref_id = ref_id
-#     order.save()
-
-#     enrollment, created = Enrollment.objects.get_or_create(
-#         student=request.user,
-#         course=order.course
-#     )
-    
-#     return redirect("payment_content", course_id=order.course.id)
+    return redirect("checkout")
 
 @login_required
 def payment_success(request):
-    order_id = request.session.get("current_order_id")
-    if not order_id:
-        return render(request, "esewa_failed.html", {"message": "Order info missing."})
+    encoded_data = request.GET.get("data")
+
+    if not encoded_data:
+        return render(request, "esewa_failed.html", {
+            "message": "No payment data received."
+        })
 
     try:
-        order = Order.objects.get(id=order_id, user=request.user)
-    except Order.DoesNotExist:
-        return render(request, "esewa_failed.html", {"message": "Order not found."})
+        # Decode base64 response
+        decoded_data = base64.b64decode(encoded_data).decode("utf-8")
+        payment_data = json.loads(decoded_data)
 
-    # Optionally verify with eSewa API here if needed
-    order.status = "Completed"  # mark as success
-    order.transaction_ref_id = request.GET.get("refId", "")  # refId optional in session method
-    order.save()
+        print("PAYMENT DATA:", payment_data)
 
-    # Create Enrollment
-    enrollment, created = Enrollment.objects.get_or_create(
-        student=request.user,
-        course=order.course
-    )
+        transaction_uuid = payment_data.get("transaction_uuid")
+        status = payment_data.get("status", "").upper() 
 
-    # Clear session
-    if "current_order_id" in request.session:
-        del request.session["current_order_id"]
+        if not transaction_uuid:
+            return render(request, "esewa_failed.html", {
+                "message": "Transaction ID missing."
+            })
 
-    return redirect("enrolled_course", course_id=order.course.id)
+        order = Order.objects.get(
+            transaction_uuid=transaction_uuid,
+            user=request.user
+        )
 
-# @receiver(post_save, sender=Order)
-# def create_enrollment_on_success(sender, instance, created, **kwargs):
-#     """Automatically create enrollment when order status becomes Success"""
-#     if instance.status == "Success" and instance.course:
-#         try:
-#             Enrollment.objects.update_or_create(
-#                 student=instance.user,
-#                 course=instance.course,
-#                 defaults={
-#                     'progress': 0,
-#                     'completed_at': None,
-#                 }
-#             )
-#             print(f"Auto-enrollment created for order {instance.id}")
-#         except Exception as e:
-#             print(f"Auto-enrollment failed: {e}")
+        # Prevent duplicate processing
+        if order.status == "Completed":
+            return redirect("enrolled_course", course_id=order.course.id)
 
-@login_required
+        # ✅ SUCCESS CHECK (FIXED)
+        if status in ["COMPLETE", "SUCCESS"]:
+            with transaction.atomic():
+                order.status = "Completed"
+                order.save()
+
+                Enrollment.objects.get_or_create(
+                    student=request.user,
+                    course=order.course
+                )
+
+            return redirect("enrolled_course", course_id=order.course.id)
+
+        else:
+            print("Payment not complete. Status:", status)
+
+            order.status = "Failed"
+            order.save()
+
+            return render(request, "esewa_failed.html", {
+                "message": f"Payment not completed. Status: {status}"
+            })
+
+    except Exception as e:
+        print("ERROR:", e)
+        return render(request, "esewa_failed.html", {
+            "message": "Payment verification failed."
+        })
+
 def payment_fail(request):
-    transaction_uuid = request.GET.get('transaction_uuid') or request.POST.get('transaction_uuid')
-    order = Order.objects.filter(transaction_uuid=transaction_uuid).first()
+    order_id = request.GET.get("current_order_id")
+
+    order = None
+    if order_id:
+        order = Order.objects.filter(id = order_id).first()
+    
     if order:
         order.status = "Failed"
         order.save()
-    return render(request, 'esewa_failed.html', {'order': order})
+    
+    return render(request, "esewa_failed.html", {"order": order})
 
 @login_required
 def payment_history(request):
@@ -1841,73 +1919,70 @@ def view_assignment(request, assignment_id):
     assignment = get_object_or_404(Assignment, id=assignment_id)
     student = request.user
 
-    # Check if student already submitted
-    submission = Submission.objects.filter(assignment=assignment, student=student).first()
-    submission_exists = submission is not None
+    submission = Submission.objects.filter(
+        assignment=assignment, student=student
+    ).first()
 
-    questions = assignment.questions.all()  # Assuming Assignment has a related_name="questions"
+    submission_exists = submission is not None
+    questions = assignment.questions.all()
 
     if request.method == "POST" and not submission_exists:
 
-        # Create the Submission object first
+        answers_to_save = []
+
+        for question in questions:
+            answer_text = request.POST.get(f"answer_{question.id}", "").strip()
+            file = request.FILES.get(f"file_{question.id}")
+            selected_option = request.POST.get(f"answer_{question.id}")
+
+            # Prevent blank answer per question
+            if not answer_text and not file and not selected_option:
+                messages.error(
+                    request,
+                    f"Please answer Question {question.id}"
+                )
+                return redirect('view_assignment', assignment_id=assignment.id)
+
+            answers_to_save.append({
+                "question": question,
+                "answer_text": answer_text or selected_option,
+                "file": file
+            })
+
+        # Create submission AFTER validation
         submission = Submission.objects.create(
             assignment=assignment,
             student=student,
-            content="",   # optional summary, can fill later
-            status="pending"  # or "submitted"
+            file=file if any(ans["file"] for ans in answers_to_save) else None,
+            content="Submitted answers",
+            status="pending"
         )
 
-        # Store each answer in StudentAnswer table
-        for question in questions:
-            answer_text = request.POST.get(f"answer_{question.id}", "").strip()
-            if answer_text:
-                StudentAnswer.objects.create(
-                    question=question,
-                    submission=submission.student,  # link to the student user
-                    answer_text=answer_text
-                )
-        
-        instructor = assignment.created_by
-
-        if instructor and instructor.email:
-            subject = "New Assignment Submission Received"
-            message = (
-                f"Hello {instructor.first_name or instructor.username},\n\n"
-                f"The student {student.get_full_name() or student.username} "
-                f"has submitted the assignment: \"{assignment.title}\".\n\n"
-                "You can review their answers in your instructor dashboard.\n\n"
-                "View the submitted answer and give the instructions feedback.\n\n"
-                "Best regards,\n"
-                "Your Student"
-            )
-
-            send_mail(
-                subject,
-                message,
-                "student@example.com",
-                [instructor.email],
-                fail_silently=True
+        # Save answers
+        for ans in answers_to_save:
+            StudentAnswer.objects.create(
+                submission=submission,
+                question=ans["question"],
+                answer_text=ans["answer_text"],
+                file=ans["file"]
             )
 
         messages.success(request, "Assignment submitted successfully!")
         return redirect('pending_assignments')
 
-    context = {
+    return render(request, 'view_assignment.html', {
         'assignment': assignment,
         'questions': questions,
         'submission_exists': submission_exists,
         'submission': submission,
-    }
-    return render(request, 'view_assignment.html', context)
+    })
 
 @login_required
 def instructor_submissions_list(request):
     instructor = request.user
 
-    # Instructor को सबै assignments
     assignments = Assignment.objects.filter(created_by=instructor)
 
-    # ती assignments का सबै submissions
     submissions = Submission.objects.filter(assignment__in=assignments).select_related('student', 'assignment')
 
     return render(request, 'submitted_answers_list.html', {
@@ -2012,7 +2087,7 @@ def sponsor_payment_process(request, student_id):
         course = get_object_or_404(Course, id=course_id)
         if not amount or float(amount) <= 0:
             messages.error(request, "Enter a valid funding amount.")
-            return redirect(request.path)
+            return redirect("fund_student")
 
         # Save minimal Funding record
         funding = Funding.objects.create(
@@ -2036,7 +2111,7 @@ def sponsor_payment_process(request, student_id):
             city=request.POST.get("city", ""),
             country="Nepal",
             payment_type="esewa",
-            status="Sponsored",
+            status="Pending",
             transaction_uuid=transaction_uuid
         )
 
@@ -2115,7 +2190,7 @@ def sponsor_payment_success(request):
     # Update order
     order = Order.objects.filter(transaction_uuid=transaction_uuid).first()
     if order:
-        order.status = "Completed"
+        order.status = "Sponsored"
         order.save()
 
         # Update funding
@@ -2162,10 +2237,10 @@ def admin_dashboard(request):
     courses = Course.objects.select_related('instructor', 'category')\
         .order_by('-created_at')[:5]
     
-    students = User.objects.filter(userprofile__role='student')\
+    students = User.objects.filter(profile__role='student')\
     
     
-    total_students = User.objects.filter(userprofile__role='student').count()
+    total_students = User.objects.filter(profile__role='student').count()
 
 
     course_data = []

@@ -170,26 +170,36 @@ class Submission(models.Model):
         ('graded', 'Graded'),
         ('late', 'Late'),
     ]
+
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='submissions')
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submissions')
-    content = models.TextField()
+
+    content = models.TextField(blank=True)
     file = models.FileField(upload_to='submissions/', blank=True, null=True)
+
     submitted_at = models.DateTimeField(auto_now_add=True)
     grade = models.PositiveIntegerField(null=True, blank=True)
     feedback = models.TextField(blank=True)
-    def __str__(self):
-        return f"{self.student.username}"
-    
-class StudentAnswer(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    submission = models.ForeignKey(User, on_delete=models.CASCADE, related_name='student_answers')  # student who submitted
-    answer_text = models.TextField()
 
     def __str__(self):
-        # question has no `title` field; use a slice of `question_text` to avoid attribute errors
-        q_text = self.question.question_text if self.question and self.question.question_text else ''
-        return f"{self.submission.username} - {q_text[:50]}"
+        return f"{self.student.username} - {self.assignment.title}"
+
+
+class StudentAnswer(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    submission = models.ForeignKey(
+        Submission,
+        on_delete=models.CASCADE,
+        related_name='student_answers'
+    )
+
+    answer_text = models.TextField(blank=True, null=True)
+    answer_file = models.FileField(upload_to='student_answers/', blank=True, null=True)
+
+    def __str__(self):
+        q_text = self.question.question_text if self.question else ''
+        return f"{self.submission.student.username} - {q_text[:50]}"
     
 class Choice(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
@@ -280,9 +290,6 @@ class Order(models.Model):
 
     # You generate this UUID before sending to eSewa
     transaction_uuid = models.CharField(max_length=255, unique=True)
-
-    # eSewa sends this after successful payment → refId
-    transaction_ref_id = models.CharField(max_length=255, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -90,11 +90,11 @@ WSGI_APPLICATION = 'learning_system.wsgi.application'
 DATABASES = {
     'default': {
     'ENGINE': 'django.db.backends.postgresql',
-    'NAME': 'lms_db',
+    'NAME': 'lms',
     'USER': 'postgres',
     'PASSWORD': 'postgres',
-    'HOST': 'localhost', # Or your database server's IP
-    'PORT': '5432', # Default PostgreSQL port
+    'HOST': 'localhost',
+    'PORT': '5432',
     }
 }
 

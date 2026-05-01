@@ -64,7 +64,7 @@ class AssignmentAdmin(admin.ModelAdmin):
 
 @admin.register(Submission)
 class SubmissionAdmin(admin.ModelAdmin):
-    list_display = ['id', 'student', 'assignment', 'grade', 'feedback', 'status', 'submitted_at']
+    list_display = ['id', 'student', 'assignment', 'grade', 'feedback', 'status', 'file', 'submitted_at']
     list_filter = ['assignment__course']
 
 @admin.register(Quiz)
@@ -105,7 +105,7 @@ class StudentAnswerAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'email', 'phone', 'address', 'course', 'amount', 'payment_type', 'transaction_uuid', 'status', 'created_at']
+    list_display = ['id', 'user', 'course', 'full_name', 'email', 'phone', 'address', 'city', 'country', 'amount', 'payment_type', 'transaction_uuid', 'status', 'created_at']
     list_filter = ['payment_type', 'status', 'created_at']
     search_fields = ['user__username', 'course_name', 'transaction_uuid']
     list_per_page = 5

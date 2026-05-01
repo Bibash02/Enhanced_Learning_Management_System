@@ -35,7 +35,6 @@ urlpatterns = [
 
     path('student/lesson_detail/<int:lesson_id>', lesson_detail, name='lesson_detail'),
     path('student/course_learn/<int:course_id>', course_learn, name='course_learn'),
-    path('student/course_learn/<int:course_id>/<int:lesson_id>', course_learn, name='course_learn_with_lesson'),
     path('student/mark_lesson_completed/<int:lesson_id>', mark_lesson_completed, name='mark_lesson_completed'),
 
     path('student/checkout/<int:course_id>', checkout, name='checkout'),

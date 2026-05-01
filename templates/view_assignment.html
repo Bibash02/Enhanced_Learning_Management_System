@@ -16,6 +16,14 @@ textarea.form-control { border-radius: 8px; resize: vertical; }
 .btn-primary, .btn-secondary { border-radius: 8px; }
 .submitted-box { background-color: #d1fae5; border-left: 5px solid #10b981; padding: 20px; border-radius: 10px; margin-bottom: 30px; }
 .no-questions { text-align: center; color: #6b7280; font-style: italic; }
+.btn {
+  background-color: #6b7280;
+  color: white;
+}
+.btn:hover {
+  background-color: gray;
+  counter-reset: white;
+}
 </style>
 </head>
 <body>
@@ -48,60 +56,62 @@ textarea.form-control { border-radius: 8px; resize: vertical; }
           <div class="question-card">
             <h5>Q{{ forloop.counter }}: {{ question.question_text }}</h5>
 
-            {% if question.question_type == "true_false" %}
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="answer_{{ question.id }}" value="True" required>
-                <label class="form-check-label">True</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="answer_{{ question.id }}" value="False" required>
-                <label class="form-check-label">False</label>
-              </div>
+            <!-- TEXT ANSWER -->
+            <textarea name="answer_{{ question.id }}" 
+                      class="form-control mb-2" 
+                      rows="3"
+                      placeholder="Write your answer..."></textarea>
 
-            {% elif question.question_type == "mcq" %}
-              {% for option in question.option1|default_if_none:''|make_list %}
-                {% comment %} Display MCQ options dynamically {% endcomment %}
-              {% endfor %}
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="answer_{{ question.id }}" value="{{ question.option1 }}" required>
-                <label class="form-check-label">{{ question.option1 }}</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="answer_{{ question.id }}" value="{{ question.option2 }}" required>
-                <label class="form-check-label">{{ question.option2 }}</label>
-              </div>
-              {% if question.option3 %}
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="answer_{{ question.id }}" value="{{ question.option3 }}">
-                  <label class="form-check-label">{{ question.option3 }}</label>
-                </div>
-              {% endif %}
-              {% if question.option4 %}
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="answer_{{ question.id }}" value="{{ question.option4 }}">
-                  <label class="form-check-label">{{ question.option4 }}</label>
-                </div>
-              {% endif %}
+            <!-- FILE UPLOAD -->
+            <label class="form-label">Upload File (Image, PDF, Video)</label>
+            <input type="file" 
+                  name="file_{{ question.id }}" 
+                  class="form-control"
+                  accept=".jpg,.jpeg,.png,.pdf,.mp4,.mov,.avi">
 
-            {% elif question.question_type == "essay" %}
-              <textarea name="answer_{{ question.id }}" class="form-control" rows="4" placeholder="Write your answer..." required></textarea>
-              {% if question.essay_guidelines %}
-                <small class="text-muted">{{ question.essay_guidelines }}</small>
-              {% endif %}
-            {% endif %}
+            <small class="text-muted">
+              Allowed: JPG, PNG, PDF, MP4, MOV, AVI
+            </small>
           </div>
-        {% endfor %}
-      {% else %}
-        <p class="no-questions">No questions available for this assignment.</p>
-      {% endif %}
+          {% endfor %}
+                {% else %}
+                  <p class="no-questions">No questions available for this assignment.</p>
+                {% endif %}
 
-      <div class="d-flex gap-2 mb-4">
-        <button type="submit" class="btn btn-primary">Submit Assignment</button>
-        <a href="{% url 'pending_assignments' %}" class="btn btn-secondary">Back</a>
-      </div>
-    </form>
-  {% endif %}
+                <div class="d-flex gap-2 mb-4">
+                  <button type="submit" class="btn">Submit Assignment</button>
+                  <a href="{% url 'pending_assignments' %}" class="btn btn-secondary">Back</a>
+                </div>
+              </form>
+            {% endif %}
 
-</div>
+          </div>
+      <script>
+      document.querySelector("form").addEventListener("submit", function(e) {
+          let valid = true;
+
+          document.querySelectorAll(".question-card").forEach(function(card) {
+              let textarea = card.querySelector("textarea");
+              let fileInput = card.querySelector("input[type='file']");
+              let radios = card.querySelectorAll("input[type='radio']:checked");
+
+              let hasText = textarea && textarea.value.trim() !== "";
+              let hasFile = fileInput && fileInput.files.length > 0;
+              let hasRadio = radios.length > 0;
+
+              if (!hasText && !hasFile && !hasRadio) {
+                  valid = false;
+                  card.style.border = "2px solid red";
+              } else {
+                  card.style.border = "";
+              }
+          });
+
+          if (!valid) {
+              e.preventDefault();
+              alert("Please answer all questions (text, option, or file).");
+          }
+      });
+      </script>
 </body>
 </html>
