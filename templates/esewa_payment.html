@@ -40,43 +40,35 @@
     <title>Redirecting to eSewa</title>
 </head>
 
-<body onload="document.getElementById('esewaForm').submit();">
+<body>
 
     <h3>Redirecting to eSewa... Please wait</h3>
 
-    <form id="esewaForm"
-          action="https://rc-epay.esewa.com.np/api/epay/main/v2/form"
-          method="POST">
+    <form id="esewaForm" action="https://rc-epay.esewa.com.np/api/epay/main/v2/form" method="POST">
 
-        <!-- Amount fields (VERY IMPORTANT: must be identical) -->
         <input type="hidden" name="amount" value="{{ total_amount }}">
         <input type="hidden" name="tax_amount" value="0">
         <input type="hidden" name="total_amount" value="{{ total_amount }}">
 
-        <!-- Transaction info -->
         <input type="hidden" name="transaction_uuid" value="{{ transaction_uuid }}">
-        <input type="hidden" name="product_code" value="{{ product_code }}">
+        <input type="hidden" name="product_code" value="EPAYTEST">
 
-        <!-- Extra charges -->
         <input type="hidden" name="product_service_charge" value="0">
         <input type="hidden" name="product_delivery_charge" value="0">
 
-        <!-- Redirect URLs -->
         <input type="hidden" name="success_url" value="{{ success_url }}">
         <input type="hidden" name="failure_url" value="{{ failure_url }}">
 
-        <!-- Signature config -->
         <input type="hidden" name="signed_field_names"
                value="total_amount,transaction_uuid,product_code">
 
         <input type="hidden" name="signature" value="{{ signature }}">
 
-        <!-- fallback button -->
-        <noscript>
-            <button type="submit">Pay with eSewa</button>
-        </noscript>
-
     </form>
+
+    <script>
+    document.getElementById("esewaForm").submit();
+    </script>
 
 </body>
 </html>
