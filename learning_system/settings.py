@@ -165,10 +165,10 @@ EMAIL_HOST_PASSWORD = '43e89d38974a58'
 EMAIL_PORT = '2525'
 
 # eSewa Payment Gateway Settings
-ESEWA_PRODUCT_CODE = "EPAYTEST"         # test product code
-ESEWA_SECRET_KEY = "8gBm/:&EnhH.1/q"   # replace with eSewa sandbox secret key
-ESEWA_SUCCESS_URL = "http://127.0.0.1:8000/esewa/success/"   # change to your domain
-ESEWA_FAILURE_URL = "http://127.0.0.1:8000/esewa/failure/"
+ESEWA_PRODUCT_CODE = "EPAYTEST"       
+ESEWA_SECRET_KEY = "8gBm/:&EnhH.1/q"   
+ESEWA_SUCCESS_URL = "http://127.0.0.1:8000/lms/student/payment/success/"
+ESEWA_FAILURE_URL = "http://127.0.0.1:8000/lms/student/payment/fail/"
 
 
 JAZZMIN_SETTINGS = {

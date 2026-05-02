@@ -1,3 +1,7 @@
+import base64
+import hashlib
+import hmac
+
 from django.db.models import Sum
 from decimal import Decimal
 from django.db import transaction
@@ -117,3 +121,20 @@ def send_notification_email(to_email, subject, message):
         [to_email],
         fail_silently=False,
     )
+
+def generate_signature(total_amount, transaction_uuid, product_code, secret_key):
+    message = f"total_amount={total_amount},transaction_uuid={transaction_uuid},product_code={product_code}"
+
+    print("SIGN STRING:", message)
+
+    signature = base64.b64encode(
+        hmac.new(
+            secret_key.encode(),
+            message.encode(),
+            hashlib.sha256
+        ).digest()
+    ).decode()
+
+    print("SIGNATURE:", signature)
+
+    return signature

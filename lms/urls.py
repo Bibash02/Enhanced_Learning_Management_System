@@ -2,7 +2,6 @@ from django.urls import path
 from .views import *
 urlpatterns = [
     path('', home, name='home'),
-    path('student/courses/', course_list, name='course_list'),
     path('signup/', signup, name='signup'),
     path('signin/', signin, name='signin'),
     path('signout', signout, name='signout'),
@@ -33,15 +32,16 @@ urlpatterns = [
     path('instructor/submissions/', instructor_submissions_list, name='instructor_submitted_answers'),
     path('instructor/submission/<int:submission_id>/', instructor_submission_detail, name='instructor_submission_detail'),
 
+    path('student/courses/', course_list, name='course_list'),
     path('student/lesson_detail/<int:lesson_id>', lesson_detail, name='lesson_detail'),
     path('student/course_learn/<int:course_id>', course_learn, name='course_learn'),
     path('student/mark_lesson_completed/<int:lesson_id>', mark_lesson_completed, name='mark_lesson_completed'),
 
     path('student/checkout/<int:course_id>', checkout, name='checkout'),
     path('student/payment/process', process_payment, name='process_payment'),
-    path('student/payment_history', payment_history, name='payment_history'),
     path('student/payment/success/', payment_success, name='payment_success'),
     path('student/payment/fail/', payment_fail, name='payment_fail'),
+    path('student/payment_history', payment_history, name='payment_history'),
     path('student/some_error_page', some_error_page, name='some_error_page'),
 
     path('student/enrolled_course', enrolled_course, name='enrolled_course'),
