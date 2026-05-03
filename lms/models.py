@@ -302,6 +302,7 @@ class Funding(models.Model):
     student = models.ForeignKey(UserProfile, null=True, blank=True, on_delete=models.CASCADE, related_name='fundings')
     course = models.ForeignKey(Course, null=True, blank=True, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    used_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     message = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, default="Pending")
     funded_at = models.DateTimeField(auto_now_add=True)

@@ -1370,20 +1370,18 @@ def process_payment(request):
     payment_type = request.POST.get("payment_type")
     transaction_uuid = str(uuid.uuid4())
 
-    # 🔥 STEP 1: Calculate total sponsorship
-    total_funded = Funding.objects.filter(
-        course=course,
-        status="Completed"
-    ).aggregate(total=Sum('amount'))['total'] or Decimal("0.0")
+    # Calculate total sponsorship
+    fundings = Funding.objects.filter(course=course, status="Completed")
+    total_funded = sum(f.amount - f.used_amount for f in fundings)
 
-    # 🔥 STEP 2: Calculate final payable amount
+    # Calculate final payable amount
     course_price = Decimal(str(course.price))
     final_price = course_price - total_funded
 
     if final_price < 0:
         final_price = Decimal("0.0")
 
-    # 🔥 STEP 3: If fully funded → skip payment
+    # If fully funded → skip payment
     if final_price == 0:
         Enrollment.objects.get_or_create(
             student=user,
@@ -1401,10 +1399,10 @@ def process_payment(request):
 
         return redirect("enrolled_course", course_id=course.id)
 
-    # 🔥 STEP 4: Format amount for eSewa
+    # Format amount for eSewa
     total_amount = format(final_price, ".2f") 
 
-    # 🔥 STEP 5: Create order with FINAL amount
+    # Create order with FINAL amount
     order = Order.objects.create(
         user=user,
         full_name=request.POST.get("name"),
@@ -1420,7 +1418,7 @@ def process_payment(request):
         status="Pending",
     )
 
-    # ================= COD =================
+    # COD 
     if payment_type == "cod":
         order.status = "Pending"
         order.save()
@@ -1432,12 +1430,12 @@ def process_payment(request):
 
         return redirect("enrolled_course", course_id=course.id)
 
-    # ================= eSewa =================
+    #  eSewa 
     if payment_type == "esewa":
         product_code = settings.ESEWA_PRODUCT_CODE
         secret_key = settings.ESEWA_SECRET_KEY
 
-        # 🔥 IMPORTANT: signature must use FINAL amount
+        # signature must use FINAL amount
         signature = generate_signature(
             total_amount,
             transaction_uuid,
@@ -1564,6 +1562,7 @@ def payment_success(request):
             transaction_uuid=transaction_uuid,
             user=request.user
         )
+        apply_funding(order.course, order.amount)
 
         # Prevent duplicate processing
         if order.status == "Completed":
@@ -2054,7 +2053,7 @@ def sponsor_payment_process(request, student_id):
             city=request.POST.get("city", ""),
             country="Nepal",
             payment_type="esewa",
-            status="Completed",
+            status="Pending",
             transaction_uuid=transaction_uuid
         )
 
@@ -2175,6 +2174,25 @@ def sponsor_payment_fail(request):
     """
     messages.error(request, "Payment failed. Please try again.")
     return redirect("sponsor_dashboard")
+
+def apply_funding(course, amount_to_use):
+    fundings = Funding.objects.filter(course=course, status="Completed")
+
+    for f in fundings:
+        available = f.amount - f.used_amount
+
+        if available <= 0:
+            continue
+
+        use = min(available, amount_to_use)
+
+        f.used_amount += use
+        f.save()
+
+        amount_to_use -= use
+
+        if amount_to_use == 0:
+            break
 
 def admin_dashboard(request):   
     courses = Course.objects.select_related('instructor', 'category')\
