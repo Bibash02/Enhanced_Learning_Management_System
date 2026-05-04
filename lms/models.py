@@ -291,6 +291,8 @@ class Order(models.Model):
     # You generate this UUID before sending to eSewa
     transaction_uuid = models.CharField(max_length=255, unique=True)
 
+    sponsor_used = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -301,6 +303,7 @@ class Funding(models.Model):
     sponsor = models.ForeignKey(User, on_delete=models.CASCADE)
     student = models.ForeignKey(UserProfile, null=True, blank=True, on_delete=models.CASCADE, related_name='fundings')
     course = models.ForeignKey(Course, null=True, blank=True, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True, blank=True, related_name='fundings')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     used_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     message = models.TextField(blank=True, null=True)

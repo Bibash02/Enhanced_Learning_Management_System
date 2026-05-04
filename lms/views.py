@@ -1344,7 +1344,7 @@ def create_lesson(request, course_id):
 def checkout(request, course_id):
     course = get_object_or_404(Course, id=course_id)
 
-    # 🔥 Only course price (convert to paisa)
+    # Only course price (convert to paisa)
     course_price_paisa = int(float(course.price) * 100)
 
     total_amount_paisa = course_price_paisa
@@ -1370,39 +1370,51 @@ def process_payment(request):
     payment_type = request.POST.get("payment_type")
     transaction_uuid = str(uuid.uuid4())
 
-    # Calculate total sponsorship
+    # Get available sponsorship (correct way)
     fundings = Funding.objects.filter(course=course, status="Completed")
-    total_funded = sum(f.amount - f.used_amount for f in fundings)
 
-    # Calculate final payable amount
+    available_funding = sum(
+        (f.amount - f.used_amount) for f in fundings
+    )
+
     course_price = Decimal(str(course.price))
-    final_price = course_price - total_funded
 
+    # Calculate sponsor_used and final_price
+    sponsor_used = min(course_price, available_funding)
+    final_price = course_price - sponsor_used
+
+    # Safety
     if final_price < 0:
-        final_price = Decimal("0.0")
+        final_price = Decimal("0.00")
 
-    # If fully funded → skip payment
+    print("COURSE PRICE:", course_price)
+    print("AVAILABLE FUNDING:", available_funding)
+    print("SPONSOR USED:", sponsor_used)
+    print("FINAL PRICE:", final_price)
+
+    # If fully funded
     if final_price == 0:
+        order = Order.objects.create(
+            user=user,
+            course=course,
+            amount=0,
+            sponsor_used=sponsor_used,  
+            payment_type="Sponsored",
+            transaction_uuid=transaction_uuid,
+            status="Completed"
+        )
+
+        # deduct funding immediately
+        apply_funding(course, sponsor_used)
+
         Enrollment.objects.get_or_create(
             student=user,
             course=course
         )
 
-        Order.objects.create(
-            user=user,
-            course=course,
-            amount=0,
-            payment_type="sponsored",
-            transaction_uuid=transaction_uuid,
-            status="Completed"
-        )
-
         return redirect("enrolled_course", course_id=course.id)
 
-    # Format amount for eSewa
-    total_amount = format(final_price, ".2f") 
-
-    # Create order with FINAL amount
+    # Create order with sponsor_used
     order = Order.objects.create(
         user=user,
         full_name=request.POST.get("name"),
@@ -1413,29 +1425,27 @@ def process_payment(request):
         country="Nepal",
         course=course,
         amount=final_price,
+        sponsor_used=sponsor_used,   
         payment_type=payment_type,
         transaction_uuid=transaction_uuid,
         status="Pending",
     )
 
-    # COD 
-    if payment_type == "cod":
-        order.status = "Pending"
-        order.save()
+    total_amount = format(final_price, ".2f")
 
+    # COD
+    if payment_type == "cod":
         Enrollment.objects.get_or_create(
             student=user,
             course=course
         )
-
         return redirect("enrolled_course", course_id=course.id)
 
-    #  eSewa 
+    # eSewa
     if payment_type == "esewa":
         product_code = settings.ESEWA_PRODUCT_CODE
         secret_key = settings.ESEWA_SECRET_KEY
 
-        # signature must use FINAL amount
         signature = generate_signature(
             total_amount,
             transaction_uuid,
@@ -1443,96 +1453,19 @@ def process_payment(request):
             secret_key
         )
 
-        print("FINAL PRICE:", total_amount) 
-        print("UUID:", transaction_uuid)
-
         success_url = request.build_absolute_uri(reverse("payment_success"))
         failure_url = request.build_absolute_uri(reverse("payment_fail"))
 
-        context = {
+        return render(request, "esewa_payment.html", {
             "total_amount": total_amount,
             "transaction_uuid": transaction_uuid,
             "product_code": product_code,
             "signature": signature,
             "success_url": success_url,
             "failure_url": failure_url,
-        }
-        
-        return render(request, "esewa_payment.html", context)
+        })
 
     return redirect("checkout")
-
-# @login_required
-# def payment_success(request):
-#     # STEP 1: Get encoded data from eSewa
-#     encoded_data = request.GET.get("data")
-#     if not encoded_data:
-#         print("No 'data' parameter received from eSewa")
-#         return render(request, "esewa_failed.html", {
-#             "message": "No payment data received."
-#         })
-
-#     try:
-#         # STEP 2: Decode Base64 → JSON
-#         decoded_bytes = base64.b64decode(encoded_data)
-#         payment_data = json.loads(decoded_bytes.decode("utf-8"))
-#         print("PAYMENT DATA:", payment_data)
-#     except Exception as e:
-#         print("Error decoding payment data:", e)
-#         return render(request, "esewa_failed.html", {
-#             "message": "Payment verification failed (decode error)."
-#         })
-
-#     # STEP 3: Extract fields
-#     transaction_uuid = payment_data.get("transaction_uuid")
-#     status = payment_data.get("status", "").upper()
-#     total_amount = payment_data.get("total_amount")
-
-#     print(f"UUID from eSewa: {transaction_uuid}")
-#     print(f"Status from eSewa: {status}")
-#     print(f"Amount from eSewa: {total_amount}")
-
-#     if not transaction_uuid:
-#         return render(request, "esewa_failed.html", {
-#             "message": "Transaction ID missing."
-#         })
-
-#     # STEP 4: Find matching order
-#     try:
-#         order = Order.objects.get(transaction_uuid=transaction_uuid, user=request.user)
-#     except Order.DoesNotExist:
-#         print("No matching order found for UUID:", transaction_uuid)
-#         return render(request, "esewa_failed.html", {
-#             "message": "Order not found for this transaction."
-#         })
-
-#     # STEP 5: Prevent duplicate processing
-#     if order.status == "Completed":
-#         print("Order already marked Completed, skipping reprocessing.")
-#         return redirect("course_learn", course_id=order.course.id)
-
-#     # STEP 6: Flexible success check
-#     if status in ["COMPLETE", "SUCCESS", "COMPLETED"]:
-#         with transaction.atomic():
-#             order.status = "Completed"
-#             order.save()
-
-#             Enrollment.objects.get_or_create(
-#                 student=request.user,
-#                 course=order.course
-#             )
-
-#         print(" Payment successful → Order marked Completed")
-#         return redirect("enrolled_course", course_id=order.course.id)
-
-#     else:
-#         order.status = "Failed"
-#         order.save()
-#         print("Payment failed → Status:", status)
-#         return render(request, "esewa_failed.html", {
-#             "message": f"Payment not completed. Status: {status}"
-#         })
-
 
 @login_required
 def payment_success(request):
@@ -1544,14 +1477,13 @@ def payment_success(request):
         })
 
     try:
-        # Decode base64 response
         decoded_data = base64.b64decode(encoded_data).decode("utf-8")
         payment_data = json.loads(decoded_data)
 
         print("PAYMENT DATA:", payment_data)
 
         transaction_uuid = payment_data.get("transaction_uuid")
-        status = payment_data.get("status", "").upper() 
+        status = payment_data.get("status", "").upper()
 
         if not transaction_uuid:
             return render(request, "esewa_failed.html", {
@@ -1562,28 +1494,37 @@ def payment_success(request):
             transaction_uuid=transaction_uuid,
             user=request.user
         )
-        apply_funding(order.course, order.amount)
 
-        # Prevent duplicate processing
+        # prevent duplicate processing
         if order.status == "Completed":
-            return redirect("enrolled_course", course_id=order.course.id)
+            return redirect("course_learn", course_id=order.course.id)
 
-        # SUCCESS CHECK (FIXED)
         if status in ["COMPLETE", "SUCCESS"]:
             with transaction.atomic():
                 order.status = "Completed"
                 order.save()
 
+                course = order.course
+
+                if order.sponsor_used > 0:
+                    apply_funding(order.course, order.sponsor_used)
+
+                    # UPDATE FUNDING STATUS
+                    fundings = Funding.objects.filter(course=course, status="Completed")
+
+                    for f in fundings:
+                        if f.amount == f.used_amount:
+                            f.status = "Sponsored"
+                            f.save()
+
                 Enrollment.objects.get_or_create(
                     student=request.user,
-                    course=order.course
+                    course=course
                 )
 
             return redirect("course_learn", course_id=order.course.id)
 
         else:
-            print("Payment not complete. Status:", status)
-
             order.status = "Failed"
             order.save()
 
@@ -1596,7 +1537,7 @@ def payment_success(request):
         return render(request, "esewa_failed.html", {
             "message": "Payment verification failed."
         })
-
+    
 def payment_fail(request):
     order_id = request.GET.get("current_order_id")
 
@@ -2008,40 +1949,30 @@ def sponsor_checkout(request, student_id):
 
 @login_required
 def sponsor_payment_process(request, student_id):
-    """
-    Sponsor funding for a student via eSewa.
-    Funding table stores minimal info.
-    Order table stores payment details and transaction info.
-    """
-
-    # Fetch student
     student = get_object_or_404(UserProfile, id=student_id, role="student")
 
     if request.method == "POST":
-        # Get amount from form
-        amount = request.POST.get("amount")
+        try:
+            amount = Decimal(request.POST.get("amount"))
+        except:
+            messages.error(request, "Invalid amount.")
+            return redirect("fund_student")
+
         course_id = request.POST.get("course_id")
 
         if not course_id:
             messages.error(request, "Please select a course.")
             return redirect("fund_student")
-        
-        course = get_object_or_404(Course, id=course_id)
-        if not amount or float(amount) <= 0:
+
+        if amount <= 0:
             messages.error(request, "Enter a valid funding amount.")
             return redirect("fund_student")
 
-        # Save minimal Funding record
-        funding = Funding.objects.create(
-            student=student,
-            sponsor=request.user,
-            course = course,
-            amount=amount,
-            message=f"Funding by {request.user.username} for {student.user.get_full_name()}"
-        )
+        course = get_object_or_404(Course, id=course_id)
 
-        # Create Order record
+        # Create Order FIRST
         transaction_uuid = str(uuid.uuid4())
+
         order = Order.objects.create(
             user=request.user,
             course=course,
@@ -2057,25 +1988,33 @@ def sponsor_payment_process(request, student_id):
             transaction_uuid=transaction_uuid
         )
 
-        # Link Funding → Order
+        # Create Funding linked to Order
+        funding = Funding.objects.create(
+            student=student,
+            sponsor=request.user,
+            course=course,
+            amount=amount,
+            message=f"Funding by {request.user.username} for {student.user.get_full_name()}",
+            status="Pending"
+        )
+
         funding.order = order
         funding.save()
 
-        # Prepare eSewa signature
+        # eSewa signature
         product_code = settings.ESEWA_PRODUCT_CODE
         total_amount = str(amount)
-        signed_fields = "total_amount,transaction_uuid,product_code"
 
+        signed_fields = "total_amount,transaction_uuid,product_code"
         data_string = f"total_amount={total_amount},transaction_uuid={transaction_uuid},product_code={product_code}"
+
         signature = base64.b64encode(
             hmac.new(settings.ESEWA_SECRET_KEY.encode(), data_string.encode(), hashlib.sha256).digest()
         ).decode()
 
-        # Dynamic URLs for redirect
         success_url = request.build_absolute_uri(reverse('sponsor_payment_success'))
         failure_url = request.build_absolute_uri(reverse('sponsor_payment_fail'))
 
-        # Render eSewa redirect page
         return render(request, "sponsor_payment.html", {
             "total_amount": total_amount,
             "transaction_uuid": transaction_uuid,
@@ -2085,83 +2024,109 @@ def sponsor_payment_process(request, student_id):
             "success_url": success_url,
             "failure_url": failure_url,
             "student": student,
-            "amount": total_amount,
             "course": course,
         })
 
-    # If GET request → redirect to fund_student
     return redirect("fund_student")
 
 @login_required
 def sponsor_payment_success(request):
-    """
-    Called by eSewa after successful payment.
-    Marks order as completed and updates funding.
-    If verification fails, still redirect to dashboard with message.
-    """
     encoded_data = request.GET.get("data")
+
     if not encoded_data:
-        messages.success(request, "Payment successful!")
+        messages.error(request, "No payment data received.")
         return redirect("sponsor_dashboard")
 
     try:
         decoded_json = base64.b64decode(encoded_data).decode()
         data = json.loads(decoded_json)
+
+        print("SPONSOR PAYMENT DATA:", data)
+
         transaction_uuid = data.get("transaction_uuid")
-        total_amount = data.get("total_amount")
-        product_code = data.get("product_code")
         signature = data.get("signature")
-    except Exception:
-        messages.success(request, "Payment successful!")
+        signed_field_names = data.get("signed_field_names")
+
+    except Exception as e:
+        print("DECODE ERROR:", e)
+        messages.error(request, "Payment verification failed.")
         return redirect("sponsor_dashboard")
 
-    # Verify signature
+    # CORRECT SIGNATURE VERIFICATION
     try:
-        raw_string = f"total_amount={total_amount},transaction_uuid={transaction_uuid},product_code={product_code}"
+        fields = signed_field_names.split(",")
+
+        raw_list = []
+        for field in fields:
+            raw_list.append(f"{field}={data.get(field)}")
+
+        raw_string = ",".join(raw_list)
+
+        print("RAW STRING:", raw_string)
+
         generated_signature = base64.b64encode(
             hmac.new(settings.ESEWA_SECRET_KEY.encode(), raw_string.encode(), hashlib.sha256).digest()
         ).decode()
-    except Exception:
-        messages.success(request, "Payment successful!")
+
+        print("GENERATED:", generated_signature)
+        print("RECEIVED :", signature)
+
+    except Exception as e:
+        print("SIGNATURE ERROR:", e)
+        messages.error(request, "Payment verification failed.")
         return redirect("sponsor_dashboard")
 
+    # If signature fails → STOP
     if generated_signature != signature:
-        messages.success(request, "Payment successful!")
+        print("SIGNATURE MISMATCH")
+        messages.error(request, "Payment verification failed.")
         return redirect("sponsor_dashboard")
 
-    # Update order
-    order = Order.objects.filter(transaction_uuid=transaction_uuid).first()
-    if order:
-        order.status = "Sponsored"
-        order.save()
+    # Update DB safely
+    try:
+        with transaction.atomic():
+            order = Order.objects.select_for_update().filter(
+                transaction_uuid=transaction_uuid
+            ).first()
 
-        # Update funding
-        funding = Funding.objects.filter(order=order).first()
-        if funding:
-            funding.status = "success"
-            funding.save()
+            if not order:
+                print("ORDER NOT FOUND")
+                messages.error(request, "Order not found.")
+                return redirect("sponsor_dashboard")
 
-            student = funding.student
-            sponsor = funding.sponsor
-            amount = funding.amount
+            # prevent duplicate
+            if order.status == "Completed":
+                return redirect("sponsor_dashboard")
 
-            if student and student.email:
-                subject = "You have received sponsorship Funding!"
-                message = (
-                    f"Hello {student.user.get_full_name() or student.user.username},\n\n"
-                    f"You have received a sponsorship funding of Rs. {amount} from {sponsor.get_full_name() or sponsor.username}.\n\n"
-                    f"Funded Amount: Rs. {amount}\n"
-                    f"Purpose: {funding.message}\n\n"
-                    "Best regards,\n"
-                    "Enhaced LMS Team"
-                )
-                send_mail(
-                    subject,
-                    message,
-                    "sponsor@example.com",
-                    [student.user.email],
-                    fail_silently=False,
-                )
+            order.status = "Completed"
+            order.save()
+
+            funding = Funding.objects.select_for_update().filter(order=order).first()
+
+            if funding:
+                funding.status = "Completed"
+                funding.save()
+
+                print("FUNDING UPDATED:", funding.id)
+
+                # Send email
+                student = funding.student
+                sponsor = funding.sponsor
+                amount = funding.amount
+
+                if student and student.user.email:
+                    send_mail(
+                        "You have received sponsorship funding!",
+                        f"You received Rs. {amount} from {sponsor.username}",
+                        "sponsor@example.com",
+                        [student.user.email],
+                        fail_silently=True,
+                    )
+
+    except Exception as e:
+        print("DB ERROR:", e)
+        messages.error(request, "Something went wrong.")
+        return redirect("sponsor_dashboard")
 
     messages.success(request, "Payment successful!")
     return redirect("sponsor_dashboard")

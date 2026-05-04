@@ -64,8 +64,8 @@ urlpatterns = [
     path('sponsor/update_sponsor_profile', update_sponsor_profile, name='update_sponsor_profile'),
     path('sponsor/sponsor_checkout/<int:student_id>/', sponsor_checkout, name='sponsor_checkout'),
     path('sponsor/sponsor_payment_process/<int:student_id>/', sponsor_payment_process, name='sponsor_payment_process'),
-    path('sponsor/sponsor_payment/success/', sponsor_payment_success, name='sponsor_payment_success'),
-    path('sponsor/sponsor_payment/fail/', sponsor_payment_fail, name='sponsor_payment_fail'),
+    path('sponsor/payment/success/', sponsor_payment_success, name='sponsor_payment_success'),
+    path('sponsor/payment/fail/', sponsor_payment_fail, name='sponsor_payment_fail'),
 
     path("sponsor/student_profile_view/<student_id>", student_profile_view, name="student_profile_view"),
     path('sponsor/funding-history', funding_history, name='funding_history'),
