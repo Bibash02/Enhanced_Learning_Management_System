@@ -31,7 +31,7 @@
 
     <span class="nav-section-label">System</span>
     <a href="#"><i class="fas fa-cog"></i> Settings</a>
-    <a href="#"><i class="fas fa-chart-bar"></i> Reports</a>
+    <a href="{% url 'export_report_pdf' %}"><i class="fas fa-chart-bar"></i> Reports</a>
 
     <div class="sidebar-footer">
         <a href="{% url 'admin:logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
@@ -157,10 +157,10 @@
                             </td>
 
                             <td>
-                                <a href="#" class="btn btn-outline-primary btn-sm me-1">
+                                <a href="{% url 'admin:lms_course_change' item.course.id %}" class="btn btn-outline-primary btn-sm me-1">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <a href="#" class="btn btn-sm btn-outline-danger">
+                                <a href="{% url 'admin:lms_course_delete' item.course.id %}" class="btn btn-sm btn-outline-danger">
                                     <i class="fas fa-trash"></i>
                                 </a>
                             </td>
@@ -224,7 +224,7 @@
                             </td>
 
                             <td>
-                                <a href="#" class="btn btn-outline-primary btn-sm">
+                                <a href="{% url 'admin:lms_userprofile_change' student.id %}" class="btn btn-outline-primary btn-sm">
                                     <i class="fas fa-eye"></i>
                                 </a>
                             </td>
@@ -256,73 +256,27 @@
                     <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
                 </div>
                 <div class="section-body">
-                    <a href="#" class="quick-action-btn">
+                    <a href="{% url 'admin:lms_course_add' %}" class="quick-action-btn">
                         <i class="fas fa-plus-circle"></i>
                         <span>Add New Course</span>
                     </a>
-                    <a href="#" class="quick-action-btn">
+                    <a href="{% url 'admin:lms_userprofile_changelist' %}" class="quick-action-btn">
                         <i class="fas fa-user-plus"></i>
-                        <span>Add Instructor</span>
+                        <span>Add Users</span>
                     </a>
-                    <a href="#" class="quick-action-btn">
+                    <a href="{% url 'admin:lms_coursecategory_changelist' %}" class="quick-action-btn">
                         <i class="fas fa-tag"></i>
                         <span>Manage Categories</span>
                     </a>
-                    <a href="#" class="quick-action-btn">
+                    <a href="{% url 'export_report_pdf' %}" class="quick-action-btn">
                         <i class="fas fa-file-export"></i>
                         <span>Export Reports</span>
                     </a>
                 </div>
             </div>
-
-            <!-- Category Popularity -->
-            <div class="section-card mb-4">
-                <div class="section-header">
-                    <h5><i class="fas fa-chart-bar me-2"></i>Category Popularity</h5>
-                </div>
-                <div class="section-body">
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span style="font-size:14px;">Programming</span>
-                            <span style="font-size:13px;color:#868e96;">68%</span>
-                        </div>
-                        <div class="progress"><div class="progress-bar" style="width:68%"></div></div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span style="font-size:14px;">Design</span>
-                            <span style="font-size:13px;color:#868e96;">45%</span>
-                        </div>
-                        <div class="progress"><div class="progress-bar" style="width:45%"></div></div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span style="font-size:14px;">Marketing</span>
-                            <span style="font-size:13px;color:#868e96;">38%</span>
-                        </div>
-                        <div class="progress"><div class="progress-bar" style="width:38%"></div></div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span style="font-size:14px;">Data Science</span>
-                            <span style="font-size:13px;color:#868e96;">55%</span>
-                        </div>
-                        <div class="progress"><div class="progress-bar" style="width:55%"></div></div>
-                    </div>
-                    <div>
-                        <div class="d-flex justify-content-between mb-1">
-                            <span style="font-size:14px;">Business</span>
-                            <span style="font-size:13px;color:#868e96;">29%</span>
-                        </div>
-                        <div class="progress"><div class="progress-bar" style="width:29%"></div></div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
-
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

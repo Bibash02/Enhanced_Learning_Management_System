@@ -67,8 +67,10 @@ urlpatterns = [
     path('sponsor/payment/success/', sponsor_payment_success, name='sponsor_payment_success'),
     path('sponsor/payment/fail/', sponsor_payment_fail, name='sponsor_payment_fail'),
 
-    path("sponsor/student_profile_view/<student_id>", student_profile_view, name="student_profile_view"),
+    path("sponsor/student/profile_view/<student_id>", student_profile_view, name="student_profile_view"),
+    path('sponsor/course/profile_view/<int:course_id>', course_profile_view, name='course_profile_view'),
     path('sponsor/funding-history', funding_history, name='funding_history'),
 
     path('admin/admin-dashboard', admin_dashboard, name='admin_dashboard'),
+    path('admin/export-report', export_report_pdf, name='export_report_pdf'),
 ]

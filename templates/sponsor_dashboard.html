@@ -376,10 +376,6 @@
               <a href="{% url 'student_profile_view' s.id %}" class="btn btn-sm btn-primary mb-1">
                 <i class="fas fa-eye"></i>
               </a>
-              <a href="#" 
-                class="btn btn-sm btn-outline-secondary mb-1">
-                <i class="fas fa-info-circle"></i>
-              </a>
             </td>
 
           </tr>
@@ -430,15 +426,9 @@
 
             <!-- Actions -->
             <td>
-              <a href="" 
+              <a href="{% url 'course_profile_view' f.course.id %}" 
                 class="btn btn-sm btn-primary mb-1">
                 <i class="fas fa-eye"></i>
-              </a>
-
-              <!-- optional detail page if needed -->
-              <a href="#" 
-                class="btn btn-sm btn-outline-secondary mb-1">
-                <i class="fas fa-info-circle"></i>
               </a>
             </td>
           </tr>

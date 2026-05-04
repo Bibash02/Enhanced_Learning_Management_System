@@ -105,7 +105,7 @@ class StudentAnswerAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'course', 'full_name', 'email', 'phone', 'address', 'city', 'country', 'amount', 'payment_type', 'transaction_uuid', 'status', 'created_at']
+    list_display = ['id', 'user', 'course', 'full_name', 'email', 'phone', 'address', 'city', 'country', 'amount', 'sponsor_used', 'payment_type', 'transaction_uuid', 'status', 'created_at']
     list_filter = ['payment_type', 'status', 'created_at']
     search_fields = ['user__username', 'course_name', 'transaction_uuid']
     list_per_page = 5
