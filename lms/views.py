@@ -168,7 +168,7 @@ def course_list(request):
     search = request.GET.get('search')
 
     if category:
-        courses = courses.filter(category__id=category)  # use ID for matching
+        courses = courses.filter(category__id=category) 
     if level:
         courses = courses.filter(level=level)
     if search:
@@ -176,7 +176,8 @@ def course_list(request):
             Q(title__icontains=search) |
             Q(description__icontains=search) |
             Q(instructor__first_name__icontains=search) |
-            Q(instructor__last_name__icontains=search)
+            Q(instructor__last_name__icontains=search) |
+            Q(level__icontains=search)
         )
 
     # Pagination
@@ -397,53 +398,130 @@ def course_content(request, course_id):
 #     }
 #     return render(request, 'course_detail.html', context)
 
-
 @login_required
 def lesson_detail(request, lesson_id):
-    lesson = get_object_or_404(Lesson.objects.select_related('module', 'course'), id=lesson_id)
-    course = lesson.course or lesson.module.course
+    lesson = get_object_or_404(
+        Lesson.objects.select_related('module', 'module__course'),
+        id=lesson_id
+    )
+
+    # Always use module → course (NOT lesson.course)
+    course = lesson.module.course
 
     # Check enrollment
     if not Enrollment.objects.filter(student=request.user, course=course).exists():
         return redirect(f"/checkout/?course_id={course.id}")
 
-    # Sidebar
-    modules = course.modules.prefetch_related('module_lessons')
+    # Sidebar modules
+    modules = course.modules.prefetch_related('module_lessons').all()
 
-    # Mark lesson as "In Progress"
-    progress, created = LessonProgress.objects.get_or_create(student=request.user, lesson=lesson)
-    if progress.status == "Not Started":
-        progress.status = "In Progress"
+    # Mark lesson as "in_progress"
+    progress, _ = LessonProgress.objects.get_or_create(
+        student=request.user,
+        lesson=lesson
+    )
+    if progress.status == "not_started":
+        progress.status = "in_progress"
         progress.save()
 
-    # Previous and next lessons
-    lessons_in_module = list(lesson.module.module_lessons.all().order_by('order'))
-    current_index = lessons_in_module.index(lesson)
-    previous_lesson = lessons_in_module[current_index - 1] if current_index > 0 else None
-    next_lesson = lessons_in_module[current_index + 1] if current_index < len(lessons_in_module) - 1 else None
+    # FIXED: Get ALL lessons across modules (STRICT ORDER)
+    all_lessons = list(
+        Lesson.objects.filter(module__course_id=course.id)
+        .select_related('module')
+        .order_by('module__order', 'module__id', 'order', 'id')
+    )
 
-    # Fetch progress for all lessons in the course
+    # SAFE INDEX (no object mismatch bug)
+    current_index = next(
+        (i for i, l in enumerate(all_lessons) if l.id == lesson.id),
+        None
+    )
+
+    # Navigation
+    previous_lesson = (
+        all_lessons[current_index - 1]
+        if current_index is not None and current_index > 0
+        else None
+    )
+
+    next_lesson = (
+        all_lessons[current_index + 1]
+        if current_index is not None and current_index < len(all_lessons) - 1
+        else None
+    )
+
+    # Progress calculation
     lesson_progress_qs = LessonProgress.objects.filter(
         student=request.user,
         lesson__module__course=course
     )
+
     progress_map = {p.lesson.id: p.status for p in lesson_progress_qs}
 
-    # Calculate course progress %
-    total_lessons = Lesson.objects.filter(module__course=course).count()
-    completed_lessons = lesson_progress_qs.filter(status="Completed").count()
+    total_lessons = len(all_lessons)
+    completed_lessons = lesson_progress_qs.filter(status="completed").count()
+
     progress_percent = int((completed_lessons / total_lessons) * 100) if total_lessons else 0
 
+    # Update Enrollment progress
+    Enrollment.objects.filter(
+        student=request.user,
+        course=course
+    ).update(progress=progress_percent)
+
+    # Update StudentProgress
+    StudentProgress.objects.update_or_create(
+        student=request.user,
+        course=course,
+        defaults={"progress": progress_percent}
+    )
+
     context = {
-    "course": course,
-    "modules": modules,
-    "selected_lesson": lesson,
-    "previous_lesson": previous_lesson,
-    "next_lesson": next_lesson,
-    "progress_map": progress_map,
-    "progress_percent": progress_percent,
+        "course": course,
+        "modules": modules,
+        "selected_lesson": lesson,
+        "previous_lesson": previous_lesson,
+        "next_lesson": next_lesson,
+        "progress_map": progress_map,
+        "progress_percent": progress_percent,
     }
+
     return render(request, "lesson_detail.html", context)
+
+@login_required
+def complete_course(request, course_id):
+    if request.method != "POST":
+        return redirect("student_dashboard")
+
+    course = get_object_or_404(Course, id=course_id)
+
+    lessons = Lesson.objects.filter(module__course=course)
+
+    # UPDATE LESSON PROGRESS (MISSING PART)
+    LessonProgress.objects.filter(
+        student=request.user,
+        lesson__module__course=course
+    ).update(status="completed")
+
+    # Enrollment
+    enrollment, _ = Enrollment.objects.get_or_create(
+        student=request.user,
+        course=course
+    )
+
+    enrollment.completed = True
+    enrollment.completed_at = timezone.now()
+    enrollment.progress = 100
+    enrollment.save()
+
+    # StudentProgress
+    StudentProgress.objects.update_or_create(
+        student=request.user,
+        course=course,
+        defaults={"progress": 100}
+    )
+
+    return redirect("student_dashboard")
 
 # @login_required
 # def assignment_list(request, course_id):
@@ -609,7 +687,11 @@ def instructor_dashboard(request):
 def sponsor_dashboard(request):
     sponsor = request.user
 
-    # Get funded UserProfile students
+    # Get filters
+    search = request.GET.get("search")
+    progress_filter = request.GET.get("progress")
+    status_filter = request.GET.get("status")
+
     sponsored_students = UserProfile.objects.filter(
         fundings__sponsor=sponsor,
         role="student"
@@ -618,9 +700,32 @@ def sponsor_dashboard(request):
         first_sponsored_date=Min("fundings__funded_at"),
         enrolled_courses=Count("user__enrollments", distinct=True),
         avg_progress=Avg("user__enrollments__progress"),
-    ).distinct()
+    )
 
-    # Total funds calculated
+    # Search (student name)
+    if search:
+        sponsored_students = sponsored_students.filter(
+            Q(user__first_name__icontains=search) |
+            Q(user__last_name__icontains=search)
+        )
+
+    # Progress Filter
+    if progress_filter == "low":
+        sponsored_students = sponsored_students.filter(avg_progress__lt=30)
+    elif progress_filter == "medium":
+        sponsored_students = sponsored_students.filter(avg_progress__gte=30, avg_progress__lt=70)
+    elif progress_filter == "high":
+        sponsored_students = sponsored_students.filter(avg_progress__gte=70)
+
+    # Status Filter
+    if status_filter == "completed":
+        sponsored_students = sponsored_students.filter(avg_progress=100)
+    elif status_filter == "ongoing":
+        sponsored_students = sponsored_students.filter(avg_progress__lt=100)
+
+    sponsored_students = sponsored_students.distinct()
+
+    # Total funds
     total_funds = Funding.objects.filter(
         sponsor=sponsor,
         student__isnull=False
@@ -633,10 +738,14 @@ def sponsor_dashboard(request):
         "sponsored_students": sponsored_students,
         "total_students_sponsored": sponsored_students.count(),
         "total_funds_allocated": total_funds,
-        "remaining_balance": 0,  # add your wallet system here
+        "remaining_balance": 0,
         "ongoing_sponsorships": sponsored_students.count(),
         "fundings": fundings,
+        "search_query": search,
+        "selected_progress": progress_filter,
+        "selected_status": status_filter,
     }
+
     return render(request, "sponsor_dashboard.html", context)
 
 @login_required
@@ -1649,7 +1758,7 @@ def enrolled_course(request):
         for module in lessons:
             for lesson in module.module_lessons.all():
                 progress = LessonProgress.objects.filter(student=request.user, lesson=lesson).first()
-                if progress and progress.status == "Completed":
+                if progress and progress.status == "completed":
                     completed_lessons += 1
         enrollment.progress = round((completed_lessons / total_lessons) * 100, 1) if total_lessons > 0 else 0
 
@@ -1851,11 +1960,11 @@ def view_assignment(request, assignment_id):
 
         for question in questions:
             answer_text = request.POST.get(f"answer_{question.id}", "").strip()
-            file = request.FILES.get(f"file_{question.id}")
+            answer_file = request.FILES.get(f"file_{question.id}")
             selected_option = request.POST.get(f"answer_{question.id}")
 
             # Prevent blank answer per question
-            if not answer_text and not file and not selected_option:
+            if not answer_text and not answer_file and not selected_option:
                 messages.error(
                     request,
                     f"Please answer Question {question.id}"
@@ -1865,14 +1974,14 @@ def view_assignment(request, assignment_id):
             answers_to_save.append({
                 "question": question,
                 "answer_text": answer_text or selected_option,
-                "file": file
+                "answer_file": answer_file
             })
 
         # Create submission AFTER validation
         submission = Submission.objects.create(
             assignment=assignment,
             student=student,
-            file=file if any(ans["file"] for ans in answers_to_save) else None,
+            file=answer_file if any(ans["answer_file"] for ans in answers_to_save) else None,
             content="Submitted answers",
             status="pending"
         )
@@ -1883,7 +1992,7 @@ def view_assignment(request, assignment_id):
                 submission=submission,
                 question=ans["question"],
                 answer_text=ans["answer_text"],
-                file=ans["file"]
+                answer_file=ans["answer_file"]
             )
 
         messages.success(request, "Assignment submitted successfully!")
@@ -1913,11 +2022,11 @@ def instructor_submission_detail(request, submission_id):
     submission = get_object_or_404(
         Submission,
         id=submission_id,
-        assignment__created_by=request.user   # Instructor only sees their own submissions
+        assignment__created_by=request.user  
     )
 
     # All answers for this submission
-    answers = StudentAnswer.objects.filter(submission=submission.student).select_related('question')
+    answers = StudentAnswer.objects.filter(submission=submission).select_related('question')
 
     # Handle marks & feedback post
     if request.method == "POST":
@@ -2196,6 +2305,24 @@ def apply_funding(course, amount_to_use):
 
         if remaining == 0:
             break
+
+def update_enrollment_progress(student, course):
+    enrollment = Enrollment.objects.get(student=student, course=course)
+    lessons = course.modules.prefetch_related('module_lessons')
+    total_lessons = sum(module.module_lessons.count() for module in lessons)
+    completed_lessons = 0
+
+    for module in lessons:
+        for lesson in module.module_lessons.all():
+            progress = LessonProgress.objects.filter(student=student, lesson=lesson).first()
+            if progress and progress.status == "Completed":
+                completed_lessons += 1
+
+    enrollment.progress = round((completed_lessons / total_lessons) * 100, 1) if total_lessons > 0 else 0
+    enrollment.completed = enrollment.progress == 100
+    if enrollment.completed:
+        enrollment.completed_at = timezone.now()
+    enrollment.save()
 
 def admin_dashboard(request):   
     courses = Course.objects.select_related('instructor', 'category')\

@@ -47,9 +47,9 @@
               <a href="{% url 'lesson_detail' lesson.id %}" class="lesson-link {% if selected_lesson and selected_lesson.id == lesson.id %}active{% endif %}">
                 <i class="fa-regular fa-circle-play me-2"></i>{{ lesson.title }}
 
-                {% if progress_map|dict_key:lesson.id == 'Completed' %}
+                {% if progress_map|dict_key:lesson.id == 'completed' %}
                   <span class="lesson-badge lesson-status-completed">Completed</span>
-                {% elif progress_map|dict_key:lesson.id == 'In Progress' %}
+                {% elif progress_map|dict_key:lesson.id == 'in progress' %}
                   <span class="lesson-badge lesson-status-inprogress">In Progress</span>
                 {% else %}
                   <span class="lesson-badge lesson-status-notstarted">Not Started</span>
@@ -77,7 +77,7 @@
           </div>
         </div>
 
-        <a href="{% url 'student_dashboard' %}" class="btn btn-dark w-100"><i class="fa-solid fa-arrow-left me-2"></i>Back to Dashboard</a>
+        <a href="{% url 'enrolled_course' %}" class="btn btn-dark w-100"><i class="fa-solid fa-arrow-left me-2"></i>Back to Dashboard</a>
       </div>
     </div>
 

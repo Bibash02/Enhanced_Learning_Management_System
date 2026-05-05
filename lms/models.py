@@ -184,7 +184,15 @@ class Submission(models.Model):
 
     def __str__(self):
         return f"{self.student.username} - {self.assignment.title}"
+    
+    @staticmethod
+    def calculate_progress(student, course):
+        total_assignments = Assignment.objects.filter(course=course).count()
+        completed_assignments = Submission.objects.filter(student=student, assignment__course=course, status__in=['graded', 'late']).count()
 
+        if total_assignments > 0:
+            return int(completed_assignments / total_assignments * 100)
+        return 0
 
 class StudentAnswer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)

@@ -112,10 +112,10 @@
       <div class="content-card">
         <h4 class="fw-bold mb-3">{{ selected_lesson.title }}</h4>
 
-        {% if selected_lesson.vedio %}
+        {% if selected_lesson.video %}
           <div class="video-wrap">
             <video controls width="100%">
-              <source src="{{ selected_lesson.vedio.url }}" type="video/mp4">
+              <source src="{{ selected_lesson.video.url }}" type="video/mp4">
               Your browser does not support the video tag.
             </video>
           </div>
@@ -132,15 +132,29 @@
         </div>
 
         <div class="lesson-nav">
+
           {% if previous_lesson %}
-            <a href="{% url 'lesson_detail' previous_lesson.id %}" class="btn-nav"><i class="fa-solid fa-arrow-left"></i> Previous</a>
+            <a href="{% url 'lesson_detail' previous_lesson.id %}" class="btn-nav">
+              <i class="fa-solid fa-arrow-left"></i> Previous
+            </a>
           {% else %}
             <div></div>
           {% endif %}
 
           {% if next_lesson %}
-            <a href="{% url 'lesson_detail' next_lesson.id %}" class="btn-nav">Next <i class="fa-solid fa-arrow-right"></i></a>
+            <a href="{% url 'lesson_detail' next_lesson.id %}" class="btn-nav">
+              Next <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          {% else %}
+            <!-- ONLY shows on LAST lesson -->
+            <form action="{% url 'complete_course' course.id %}" method="POST">
+              {% csrf_token %}
+              <button type="submit" class="btn-nav btn-success">
+                ✅ Complete Course
+              </button>
+            </form>
           {% endif %}
+
         </div>
       </div>
     </div>

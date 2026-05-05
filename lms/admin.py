@@ -57,7 +57,7 @@ class QuestionInline(admin.TabularInline):
 
 @admin.register(Assignment)
 class AssignmentAdmin(admin.ModelAdmin):
-    list_display = ['title', 'course', 'created_by', 'created_at', 'is_published']
+    list_display = ['created_by', 'title', 'course', 'due_date', 'max_points', 'created_at', 'is_published']
     list_filter = ['course', 'is_published', 'created_at']
     search_fields = ['title', 'course__title', 'created_by__username']
     inlines = [QuestionInline]
@@ -100,7 +100,7 @@ class QuizAttemptAdmin(admin.ModelAdmin):
 
 @admin.register(StudentAnswer)
 class StudentAnswerAdmin(admin.ModelAdmin):
-    list_display = ['id', 'question', 'submission', 'answer_text']
+    list_display = ['id', 'question', 'submission', 'answer_text', 'answer_file']
     list_filter = ['question']
 
 @admin.register(Order)
@@ -123,3 +123,7 @@ class SponsorshipAdmin(admin.ModelAdmin):
     list_filter = ['status', 'course']
     search_fields = ['sponsor__user__username', 'student__user_username']
     list_per_page = 10
+
+@admin.register(StudentProgress)
+class StudentProgressAdmin(admin.ModelAdmin):
+    list_display = ['student', 'course', 'progress', 'last_updated']

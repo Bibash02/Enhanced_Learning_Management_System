@@ -62,9 +62,14 @@ body { background: #f4f4f4; font-family: "Times New Roman", serif; }
           
           <!-- Progress bar -->
           <div class="progress mb-2">
-            <div class="progress-bar" style="width: {{ enrollment.progress }}%;"></div>
+            <div class="progress-bar bg-success" role="progressbar"
+                style="width: {{ enrollment.progress }}%;" 
+                aria-valuenow="{{ enrollment.progress }}" aria-valuemin="0" aria-valuemax="100">
+              {{ enrollment.progress }}%
+            </div>
           </div>
-          <small>Progress: {{ enrollment.progress }}%</small>
+          <small class="text-muted">Progress: {{ enrollment.progress }}%</small>
+
 
           <!-- Start learning button -->
           <a href="{% url 'course_learn' enrollment.course.id %}" class="btn w-100 mt-2">Start Learning</a>

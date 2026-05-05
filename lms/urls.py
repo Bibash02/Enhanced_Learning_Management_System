@@ -18,7 +18,6 @@ urlpatterns = [
     path('assignment_delete/<int:assignment_id>', assignment_delete, name='assignment_delete'),
     path('instructor/course_create', course_create, name='course_create'),
     path('instructor/course_edit/<int:course_id>', course_edit, name='course_edit'),
-    path('student/courses/<int:course_id>/', course_detail, name='course_detail'),
     path('course_delete/<int:course_id>', course_delete, name='course_delete'),
     path('course_content/<int:course_id>', course_content, name='course_content'),
     path('instructor/create_lesson/<int:course_id>', create_lesson, name='create_lesson'),
@@ -33,8 +32,11 @@ urlpatterns = [
     path('instructor/submission/<int:submission_id>/', instructor_submission_detail, name='instructor_submission_detail'),
 
     path('student/courses/', course_list, name='course_list'),
-    path('student/lesson_detail/<int:lesson_id>', lesson_detail, name='lesson_detail'),
+    path('student/courses/<int:course_id>/', course_detail, name='course_detail'),
+    path('student/enrolled_course', enrolled_course, name='enrolled_course'),
     path('student/course_learn/<int:course_id>', course_learn, name='course_learn'),
+    path('student/lesson_detail/<int:lesson_id>', lesson_detail, name='lesson_detail'),
+    path('student/complete/course/<int:course_id>', complete_course, name='complete_course'),
     path('student/mark_lesson_completed/<int:lesson_id>', mark_lesson_completed, name='mark_lesson_completed'),
 
     path('student/checkout/<int:course_id>', checkout, name='checkout'),
@@ -44,7 +46,6 @@ urlpatterns = [
     path('student/payment_history', payment_history, name='payment_history'),
     path('student/some_error_page', some_error_page, name='some_error_page'),
 
-    path('student/enrolled_course', enrolled_course, name='enrolled_course'),
     path('student/student_profile', student_profile, name='student_profile'),
     path('student/update_student_profile', update_student_profile, name='update_student_profile'),
     path('student/change_student_password', change_student_password, name='change_student_passowrd'),

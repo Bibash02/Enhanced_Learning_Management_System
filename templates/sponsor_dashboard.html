@@ -313,6 +313,40 @@
       </a>
     </div>
 
+    <form method="get" class="row g-3 mb-4">
+
+        <!-- Search -->
+        <div class="col-md-3">
+            <input type="text" name="search" class="form-control"
+                  placeholder="Search students..."
+                  value="{{ search_query }}">
+        </div>
+
+        <!-- Progress Filter -->
+        <div class="col-md-3">
+            <select name="progress" class="form-control">
+                <option value="">All Progress</option>
+                <option value="low" {% if selected_progress == "low" %}selected{% endif %}>Low (&lt;30%)</option>
+                <option value="medium" {% if selected_progress == "medium" %}selected{% endif %}>Medium (30–70%)</option>
+                <option value="high" {% if selected_progress == "high" %}selected{% endif %}>High (&gt;70%)</option>
+            </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="col-md-3">
+            <select name="status" class="form-control">
+                <option value="">All Status</option>
+                <option value="ongoing" {% if selected_status == "ongoing" %}selected{% endif %}>Ongoing</option>
+                <option value="completed" {% if selected_status == "completed" %}selected{% endif %}>Completed</option>
+            </select>
+        </div>
+
+        <!-- Button -->
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+
+    </form>
 
     <!-- Sponsored Students Table -->
     <div class="section-header mt-4">

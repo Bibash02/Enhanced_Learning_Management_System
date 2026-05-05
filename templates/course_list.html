@@ -150,27 +150,14 @@
                    placeholder="Search courses..."
                    value="{{ search_query }}">
         </div>
-
         <div class="col-md-3">
-            <select name="category" class="form-select">
-                <option value="">All Categories</option>
-                {% for cat in categories %}
-                    <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == selected_category|stringformat:"s" %}selected{% endif %}>
-                        {{ cat.name }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="col-md-3">
-            <select name="level" class="form-select">
+            <select name="level" class="form-control">
                 <option value="">All Levels</option>
                 <option value="beginner" {% if selected_level == "beginner" %}selected{% endif %}>Beginner</option>
                 <option value="intermediate" {% if selected_level == "intermediate" %}selected{% endif %}>Intermediate</option>
                 <option value="advanced" {% if selected_level == "advanced" %}selected{% endif %}>Advanced</option>
             </select>
         </div>
-
         <div class="col-md-2">
             <button type="submit" class="btn btn-primary w-100">Filter</button>
         </div>

@@ -46,6 +46,15 @@
 
                 <h6 class="fw-bold">Submitted Answer:</h6>
                 <p>{{ ans.answer_text }}</p>
+            
+                <h6 class="fw-bold">Submitted File:</h6>
+                {% if ans.answer_file %}
+                    <a href="{{ ans.answer_file.url }}" target="_blank" class="btn btn-sm">
+                        View Uploaded File
+                    </a>
+                {% else %}
+                    <p>No file uploaded for this question.</p>
+                {% endif %}
             </div>
         {% empty %}
             <p>No answers submitted.</p>
