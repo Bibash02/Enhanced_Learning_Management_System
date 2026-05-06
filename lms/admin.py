@@ -24,7 +24,7 @@ class CourseAdmin(admin.ModelAdmin):
 
 @admin.register(Enrollment)
 class EnrollmentAdmin(admin.ModelAdmin):
-    list_display = ['student', 'course', 'enrolled_at', 'progress']
+    list_display = ['student', 'course', 'enrolled_at', 'completed_at', 'completed', 'progress']
     list_filter = ['enrolled_at']
 
 @admin.register(Module)

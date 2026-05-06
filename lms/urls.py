@@ -30,6 +30,7 @@ urlpatterns = [
 
     path('instructor/submissions/', instructor_submissions_list, name='instructor_submitted_answers'),
     path('instructor/submission/<int:submission_id>/', instructor_submission_detail, name='instructor_submission_detail'),
+    path('instructor/analytics', instructor_analytics, name='instructor_analytics'),
 
     path('student/courses/', course_list, name='course_list'),
     path('student/courses/<int:course_id>/', course_detail, name='course_detail'),

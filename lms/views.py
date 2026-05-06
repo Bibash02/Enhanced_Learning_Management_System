@@ -33,6 +33,7 @@ from django.dispatch import receiver
 from django.contrib.auth import update_session_auth_hash
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
+import pandas as pd
 
 def signup(request):
     if request.method == "POST":
@@ -644,10 +645,11 @@ def student_dashboard(request):
     # 5. Count
     pending_assignments_count = pending_assignments.count()
 
-    # Total hours spent
-    total_hours_spent = enrollments.aggregate(
-        total=Sum('hours_spent')
-    )['total'] or 0
+    # Total money spent (only completed orders)
+    total_money_spent = Order.objects.filter(
+        user = user,
+        status = "Completed"
+    ).aggregate(total=Sum('amount'))['total'] or 0
 
     context = {
         'enrollments': enrollments,
@@ -655,10 +657,9 @@ def student_dashboard(request):
         'completed_courses_count': completed_courses_count,
         'pending_assignments_count': pending_assignments_count,
         'pending_assignments': pending_assignments,
-        'total_hours_spent': total_hours_spent,
+        'total_money_spent': total_money_spent,
     }
     return render(request, 'student_dashboard.html', context)
-
 
 @login_required
 def instructor_dashboard(request):
@@ -667,6 +668,8 @@ def instructor_dashboard(request):
     total_courses = courses.count()
     total_students = Enrollment.objects.filter(course__in=courses).values('student').distinct().count()
     total_assignments = sum(course.assignments.count() for course in courses)
+
+    total_revenue = get_total_revenue(courses)
 
     # Optionally, fetch recent assignments for quick access (limit 5)
     recent_assignments = []
@@ -681,6 +684,7 @@ def instructor_dashboard(request):
         'total_students': total_students,
         'total_assignments': total_assignments,
         'recent_assignments': recent_assignments,
+        'total_revenue': total_revenue,
     }
     return render(request, 'instructor_dashboard.html', context)
 
@@ -1748,7 +1752,7 @@ def some_error_page(request):
 @login_required
 def enrolled_course(request):
     # Fetch all enrollments of the student
-    enrollments = Enrollment.objects.filter(student=request.user).select_related('course', 'course__instructor')
+    enrollments = Enrollment.objects.filter(student=request.user, completed=False).select_related('course', 'course__instructor')
 
     # Attach progress for each course
     for enrollment in enrollments:
@@ -1884,9 +1888,13 @@ def completed_courses(request):
 
     completed = []
     for enroll in enrollments:
-        total_lessons = sum(module.module_lessons.count() for module in enroll.course.modules.all())
+        total_lessons = Lesson.objects.filter(
+            module__course=enroll.course
+        ).count()
         completed_lessons = LessonProgress.objects.filter(
-            student=request.user, lesson__module__course=enroll.course, status="Completed"
+            student=request.user,
+            lesson__module__course=enroll.course,
+            status="completed"
         ).count()
 
         if total_lessons > 0 and total_lessons == completed_lessons:
@@ -2323,6 +2331,52 @@ def update_enrollment_progress(student, course):
     if enrollment.completed:
         enrollment.completed_at = timezone.now()
     enrollment.save()
+
+def get_total_revenue(courses):
+    return Enrollment.objects.filter(
+        course__in=courses,
+        completed=True
+    ).aggregate(
+        total=Sum('course__price')
+    )['total'] or 0
+
+@login_required
+def instructor_analytics(request):
+    instructor = request.user
+
+    courses = Course.objects.filter(instructor=instructor)
+
+    enrollments = Enrollment.objects.filter(course__in=courses)
+
+    #  Course-wise revenue
+    revenue_data = enrollments.values(
+        'course__title'
+    ).annotate(
+        students=Count('student'),
+        revenue=Sum('course__price') 
+    )
+
+    df = pd.DataFrame(list(revenue_data))
+
+    #  Top selling courses
+    top_courses = df.sort_values(by='students', ascending=False).head(5)
+
+    #  Total revenue
+    total_revenue = get_total_revenue(courses)
+
+    # Prepare chart data
+    chart_labels = df['course__title'].tolist() if not df.empty else []
+    chart_values = df['students'].tolist() if not df.empty else []
+
+    context = {
+        "courses": courses,
+        "total_revenue": total_revenue,
+        "chart_labels": chart_labels,
+        "chart_values": chart_values,
+        "top_courses": top_courses.to_dict(orient='records'),
+    }
+
+    return render(request, "instructor_analytics.html", context)
 
 def admin_dashboard(request):   
     courses = Course.objects.select_related('instructor', 'category')\

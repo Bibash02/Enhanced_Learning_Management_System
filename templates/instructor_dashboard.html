@@ -115,6 +115,7 @@
     <a href="{% url 'course_create' %}">Create Course</a>
     <a href="{% url 'assignment_create' %}">Create Assignment</a>
     <a href="{% url 'instructor_submitted_answers' %}">View Submissions</a>
+    <a href="{% url 'instructor_analytics' %}">Analytics</a>
     <a href="{% url 'instructor_profile' %}">Profile</a>
     <a href="{% url 'signout' %}">Logout</a>
   </div>
@@ -145,8 +146,8 @@
       </div>
       <div class="col-md-3">
         <div class="stat-card">
-          <h3>{{ total_courses }}</h3>
-          <p>Published Courses</p>
+          <h3>{{ total_revenue }}</h3>
+          <p>Total Revenue</p>
         </div>
       </div>
     </div>
