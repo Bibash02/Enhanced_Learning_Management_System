@@ -97,10 +97,11 @@ class AssignmentSerializer(serializers.ModelSerializer):
         fields = ['id', 'course', 'title', 'description', 'due_date', 'created_at', 'questions']
 
 class SubmissionSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.get_full_name', read_only=True)
 
     class Meta:
         model = Submission
-        fields = ['id', 'assignment', 'student', 'content', 'submitted_at', 'grade', 'feedback', 'submitted_at']
+        fields = ['id', 'assignment', 'student_name', 'content', 'submitted_at', 'grade', 'feedback', 'submitted_at']
 
 class StudentAnswerSerializer(serializers.ModelSerializer):
 

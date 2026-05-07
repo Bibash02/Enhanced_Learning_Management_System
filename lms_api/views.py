@@ -13,6 +13,7 @@ from rest_framework.generics import ListAPIView
 from .email_service import send_enrollment_email
 from django.core.mail import send_mail
 from django.conf import settings
+from rest_framework.pagination import PageNumberPagination
 
 from django.contrib.auth.models import User
 from .serializers import *
@@ -59,21 +60,12 @@ class LoginAPIView(APIView):
                 return Response({
                     "token": token.key,
                     "username": user.first_name,
-                    "role": user.userprofile.role
+                    "role": user.profile.role
                 })
 
             return Response({"error": "Invalid email or password"}, status=400)
 
         return Response(serializer.errors, status=400)
-
-# List all enrolled courses
-class StudentCoursesAPIView(APIView):
-    permission_classes = [IsStudent]
-
-    def get(self, request):
-        enrollments = Enrollment.objects.filter(student=request.user)
-        serializer = EnrollmentSerializer(enrollments, many=True)
-        return Response(serializer.data)
     
 # View all published courses
 class StudentCourseListAPIView(ListAPIView):
@@ -98,6 +90,11 @@ class StudentCourseDetailAPIView(APIView):
 class EnrollCourseAPIView(APIView):
     permission_classes = [IsStudent]
 
+    def get(self, request, course_id):
+        course = get_object_or_404(Course, id=course_id, is_published=True)
+        serializer = CourseSerializer(course)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def post(self, request, course_id):
         course = get_object_or_404(Course, id=course_id, is_published=True)
         enrollment, created = Enrollment.objects.get_or_create(student=request.user, course=course)
@@ -105,7 +102,7 @@ class EnrollCourseAPIView(APIView):
             return Response({"detail": "Already enrolled."}, status=status.HTTP_400_BAD_REQUEST)
         
         # Send email to instructor
-        instructor = course.instructor     # assuming Course model has instructor FK
+        instructor = course.instructor    
         send_enrollment_email(
             student=request.user,
             instructor=instructor,
@@ -113,6 +110,15 @@ class EnrollCourseAPIView(APIView):
         )
         serializer = EnrollmentSerializer(enrollment)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+# View all enrolled courses by student
+class StudentEnrolledCoursesAPIView(APIView):
+    permission_classes = [IsStudent]
+
+    def get(self, request):
+        enrollment = Enrollment.objects.filter(student=request.user)
+        serializer = EnrollmentSerializer(enrollment, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 # View assignments of a course
 class CourseAssignmentsAPIView(APIView):
@@ -139,30 +145,88 @@ class CourseAssignmentsAPIView(APIView):
 class SubmitAssignmentAPIView(APIView):
     permission_classes = [IsStudent]
 
-    def post(self, request, assignment_id):
+    def get(self, request, *args, **kwargs):
+        assignment_id = kwargs.get('assignment_id')
         assignment = get_object_or_404(Assignment, id=assignment_id)
-        content = request.data.get('content', '')
 
-        # Create submission
-        submission, created = Submission.objects.get_or_create(
+        serializer = AssignmentSerializer(assignment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        assignment_id = kwargs.get('assignment_id')
+        assignment = get_object_or_404(Assignment, id=assignment_id)
+
+        # STRONG duplicate prevention
+        if Submission.objects.filter(
             assignment=assignment,
-            student=request.user,
-            defaults={'content': content}
-        )
-        if not created:
-            return Response({"detail": "Assignment already submitted."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Save answers if any
-        answers = request.data.get('answers', [])
-        for ans in answers:
-            StudentAnswer.objects.create(
-                submission=submission,
-                question_id=ans['question_id'],
-                answer_text=ans['answer_text']
+            student=request.user
+        ).exists():
+            return Response(
+                {"detail": "You have already submitted this assignment."},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer = SubmissionSerializer(submission)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        content = request.data.get('content', '').strip()
+        answers = request.data.get('answers', [])
+
+        # fix JSON string issue
+        import json
+        if isinstance(answers, str):
+            try:
+                answers = json.loads(answers)
+            except:
+                answers = []
+
+        # block empty submission
+        has_valid_answer = any(
+            (ans.get('answer_text') and ans.get('answer_text').strip()) or ans.get('answer_file')
+            for ans in answers
+        )
+
+        if not content and not has_valid_answer:
+            return Response(
+                {"detail": "Submission cannot be empty."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # create submission
+        submission = Submission.objects.create(
+            assignment=assignment,
+            student=request.user,
+            content=content
+        )
+
+        # save answers (TEXT + FILE supported)
+        for ans in answers:
+            question_id = ans.get('question_id')
+            answer_text = (ans.get('answer_text') or '').strip()
+
+            # file must come from request.FILES (FormData)
+            answer_file_key = ans.get('answer_file_key')
+            answer_file = request.FILES.get(answer_file_key) if answer_file_key else None
+
+            # skip invalid rows
+            if not question_id:
+                continue
+
+            # allow text OR file
+            if not answer_text and not answer_file:
+                continue
+
+            StudentAnswer.objects.create(
+                submission=submission,
+                question_id=question_id,
+                answer_text=answer_text if answer_text else None,
+                answer_file=answer_file
+            )
+
+        return Response(
+            {
+                "message": "Assignment submitted successfully",
+                "submission_id": submission.id
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 # View grades
 class MyGradesAPIView(APIView):
@@ -185,7 +249,7 @@ class CourseCreateAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # List instructor courses
-class InstructorCoursesAPIView(APIView):
+class InstructorCoursesAPIView(ListAPIView):
     permission_classes = [IsInstructor]
     serializer_class = CourseSerializer
     filter_backends = [SearchFilter]
@@ -193,6 +257,28 @@ class InstructorCoursesAPIView(APIView):
 
     def get_queryset(self):
         return Course.objects.filter(instructor=self.request.user)
+    
+# Update specific course
+class CourseUpdateAPIView(APIView):
+    permission_classes = [IsInstructor]
+
+    def get(self, request, course_id):
+        course = get_object_or_404(Course, id=course_id, instructor=request.user)
+        serializer = CourseSerializer(course)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, course_id):
+        course = get_object_or_404(Course, id=course_id, instructor = request.user)
+        serializer = CourseSerializer(course, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, course_id):
+        course = get_object_or_404(Course, id=course_id, instructor=request.user)
+        course.delete()
+        return Response({"detail": "Course deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 # Create assignment for course
 class AssignmentCreateAPIView(APIView):
@@ -208,10 +294,10 @@ class AssignmentCreateAPIView(APIView):
             # Save assignment with course
             assignment = serializer.save(course=course)
 
-            # 🔹 Get all enrolled students
+            # Get all enrolled students
             enrolled_students = Enrollment.objects.filter(course=course)
 
-            # 🔹 Send email notification to each student
+            # Send email notification to each student
             subject = f"New Assignment Added: {assignment.title}"
             message = (
                 f"Hello Student,\n\n"
@@ -256,8 +342,69 @@ class AssignmentSubmissionsAPIView(APIView):
         return Response(serializer.data)
 
 # Grade a submission
+# class GradeSubmissionAPIView(APIView):
+#     permission_classes = [IsInstructor]
+
+#     def get(self, request, submission_id):
+#         submission = get_object_or_404(
+#             Submission, id = submission_id
+#         )
+#         serializer = SubmissionSerializer(submission)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+
+#     def post(self, request, submission_id):
+#         submission = get_object_or_404(
+#             Submission,
+#             id=submission_id,
+#             assignment__created_by=request.user
+#         )
+#         grade = request.data.get('grade')
+#         feedback = request.data.get('feedback', '')
+
+#         submission.grade = grade
+#         submission.feedback = feedback
+#         submission.status = 'graded'
+#         submission.save()
+
+#         # Send email to the student
+#         student_user = submission.student  # assuming submission.student is a User instance
+#         student_email = getattr(student_user, 'email', None)
+#         from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+
+#         if student_email and from_email:
+#             subject = f"Your Assignment '{submission.assignment.title}' has been Graded!"
+#             message = (
+#                 f"Hello {student_user.first_name or student_user.username},\n\n"
+#                 f"Your submission for the assignment '{submission.assignment.title}' has been graded.\n"
+#                 f"Grade: {grade}\n"
+#                 f"Feedback: {feedback}\n\n"
+#                 "Best regards,\n"
+#                 "LMS Team"
+#             )
+#             try:
+#                 send_mail(subject, message, from_email, [student_email], fail_silently=False)
+#                 email_sent = True
+#             except Exception as e:
+#                 print("Email sending error:", e)
+#                 email_sent = False
+#         else:
+#             email_sent = False
+
+#         return Response(
+#             {
+#                 "submission": SubmissionSerializer(submission).data,
+#                 "email_sent": email_sent
+#             },
+#             status=status.HTTP_200_OK
+#         )
+
 class GradeSubmissionAPIView(APIView):
     permission_classes = [IsInstructor]
+
+    def get(self, request, submission_id):
+        submission = get_object_or_404(Submission, id=submission_id)
+        serializer = SubmissionSerializer(submission)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, submission_id):
         submission = get_object_or_404(
@@ -265,37 +412,60 @@ class GradeSubmissionAPIView(APIView):
             id=submission_id,
             assignment__created_by=request.user
         )
-        grade = request.data.get('grade')
-        feedback = request.data.get('feedback', '')
 
+        grade = request.data.get('grade')
+        feedback = request.data.get('feedback', '').strip()
+
+        # BLOCK EMPTY GRADE
+        if grade is None or str(grade).strip() == "":
+            return Response(
+                {"detail": "Grade cannot be empty."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # optional: validate grade is number
+        try:
+            grade = int(grade)
+        except ValueError:
+            return Response(
+                {"detail": "Grade must be a number."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # optional: validate range (0–100)
+        if grade < 0 or grade > 100:
+            return Response(
+                {"detail": "Grade must be between 0 and 100."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # save grade
         submission.grade = grade
         submission.feedback = feedback
         submission.status = 'graded'
         submission.save()
 
-        # Send email to the student
-        student_user = submission.student  # assuming submission.student is a User instance
+        # email logic (unchanged)
+        student_user = submission.student
         student_email = getattr(student_user, 'email', None)
         from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+
+        email_sent = False
 
         if student_email and from_email:
             subject = f"Your Assignment '{submission.assignment.title}' has been Graded!"
             message = (
                 f"Hello {student_user.first_name or student_user.username},\n\n"
-                f"Your submission for the assignment '{submission.assignment.title}' has been graded.\n"
+                f"Your submission has been graded.\n"
                 f"Grade: {grade}\n"
                 f"Feedback: {feedback}\n\n"
-                "Best regards,\n"
-                "LMS Team"
+                "Best regards,\nLMS Team"
             )
             try:
                 send_mail(subject, message, from_email, [student_email], fail_silently=False)
                 email_sent = True
             except Exception as e:
                 print("Email sending error:", e)
-                email_sent = False
-        else:
-            email_sent = False
 
         return Response(
             {
@@ -317,6 +487,11 @@ class SponsorStudentListAPIView(ListAPIView):
 # Fund a student
 class FundStudentAPIView(APIView):
     permission_classes = [IsSponsor]
+
+    def get(self, request):
+        serializer = FundStudentSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def post(self, request):
         serializer = FundStudentSerializer(data=request.data)
@@ -410,13 +585,20 @@ class CourseListForFundingAPIView(APIView):
     permission_classes = [IsSponsor]
 
     def get(self, request):
-        courses = Course.objects.all()   # Fetch all created courses
+        courses = Course.objects.all()  
+        paginator = PageNumberPagination()
+        paginator.page_size = 5
         serializer = CourseSerializer(courses, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 # Fund a course
 class FundCourseAPIView(APIView):
     permission_classes = [IsSponsor]
+
+    def get(self, request):
+        serializer = FundCourseSerializer(data = request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def post(self, request):
         serializer = FundCourseSerializer(data=request.data)
@@ -511,5 +693,9 @@ class FundingHistoryAPIView(APIView):
 
     def get(self, request):
         fundings = Funding.objects.filter(sponsor=request.user).order_by('-funded_at')
-        serializer = FundingHistorySerializer(fundings, many=True)
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 5
+        result_page = paginator.paginate_queryset(fundings, request)
+        serializer = FundingHistorySerializer(result_page, many=True)
         return Response(serializer.data)

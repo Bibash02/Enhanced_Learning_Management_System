@@ -64,7 +64,7 @@ class AssignmentAdmin(admin.ModelAdmin):
 
 @admin.register(Submission)
 class SubmissionAdmin(admin.ModelAdmin):
-    list_display = ['id', 'student', 'assignment', 'grade', 'feedback', 'status', 'file', 'submitted_at']
+    list_display = ['id', 'student', 'assignment', 'grade', 'feedback', 'status', 'content', 'file', 'submitted_at']
     list_filter = ['assignment__course']
 
 @admin.register(Quiz)
@@ -74,7 +74,7 @@ class QuizAdmin(admin.ModelAdmin):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ['question_text', 'assignment', 'question_type', 'created_at']
+    list_display = ['id', 'question_text', 'assignment', 'question_type', 'created_at']
     list_filter = ['question_type', 'assignment__course']
     search_fields = ['question_text']
 
