@@ -1,3 +1,6 @@
+from decimal import Decimal
+
+from django.urls import reverse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
@@ -6,6 +9,9 @@ from rest_framework.permissions import AllowAny
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
+
+from lms.utils import generate_signature
+from lms.views import apply_funding
 from .permissions import IsStudent, IsInstructor, IsSponsor
 from django.shortcuts import get_object_or_404
 from rest_framework.filters import SearchFilter
@@ -14,6 +20,7 @@ from .email_service import send_enrollment_email
 from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.pagination import PageNumberPagination
+import uuid
 
 from django.contrib.auth.models import User
 from .serializers import *
@@ -85,7 +92,267 @@ class StudentCourseDetailAPIView(APIView):
         course = get_object_or_404(Course, id=course_id, is_published=True)
         serializer = CourseSerializer(course)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class CheckoutAPIView(APIView):
+    permission_classes = [IsStudent]
+
+    def post(self, request, course_id):
+
+        user = request.user
+
+        course = get_object_or_404(
+            Course,
+            id=course_id,
+            is_published=True
+        )
+
+        # already enrolled
+        if Enrollment.objects.filter(
+            student=user,
+            course=course
+        ).exists():
+            return Response(
+                {"detail": "You are already enrolled in this course."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # already purchased
+        if Order.objects.filter(
+            user=user,
+            course=course,
+            status="Completed"
+        ).exists():
+            return Response(
+                {"detail": "You already purchased this course."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # VALIDATE INPUTS
+        payment_type = request.data.get("payment_type", "").strip()
+
+        if not payment_type:
+            return Response(
+                {"detail": "Payment type is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if payment_type not in ["esewa", "cod"]:
+            return Response(
+                {"detail": "Invalid payment type."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        full_name = request.data.get("name", "").strip()
+        email = request.data.get("email", "").strip()
+        phone = request.data.get("phone", "").strip()
+        address = request.data.get("address", "").strip()
+        city = request.data.get("city", "").strip()
+
+        if not full_name:
+            return Response(
+                {"detail": "Full name is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not email:
+            return Response(
+                {"detail": "Email is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not phone:
+            return Response(
+                {"detail": "Phone number is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not address:
+            return Response(
+                {"detail": "Address is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not city:
+            return Response(
+                {"detail": "City is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # SPONSORSHIP LOGIC
+        transaction_uuid = str(uuid.uuid4())
+
+        fundings = Funding.objects.filter(
+            course=course,
+            status="Completed"
+        )
+
+        available_funding = sum(
+            (f.amount - f.used_amount)
+            for f in fundings
+        )
+
+        course_price = Decimal(str(course.price))
+
+        sponsor_used = min(course_price, available_funding)
+
+        final_price = course_price - sponsor_used
+
+        if final_price < 0:
+            final_price = Decimal("0.00")
+
+        # FULLY SPONSORED COURSE
+        if final_price == 0:
+
+            order = Order.objects.create(
+                user=user,
+                course=course,
+                full_name=full_name,
+                email=email,
+                phone=phone,
+                address=address,
+                city=city,
+                country="Nepal",
+                amount=0,
+                sponsor_used=sponsor_used,
+                payment_type="cod",
+                transaction_uuid=transaction_uuid,
+                status="Sponsored"
+            )
+
+            # apply funding
+            apply_funding(course, sponsor_used)
+
+            Enrollment.objects.get_or_create(
+                student=user,
+                course=course
+            )
+
+            return Response(
+                {
+                    "message": "Course fully sponsored.",
+                    "enrolled": True,
+                    "course_id": course.id
+                },
+                status=status.HTTP_200_OK
+            )
+
+        # CREATE ORDER
+        order = Order.objects.create(
+            user=user,
+            course=course,
+            full_name=full_name,
+            email=email,
+            phone=phone,
+            address=address,
+            city=city,
+            country="Nepal",
+            amount=final_price,
+            sponsor_used=sponsor_used,
+            payment_type=payment_type,
+            transaction_uuid=transaction_uuid,
+            status="Pending"
+        )
+
+        # CASH ON DELIVERY
+        if payment_type == "cod":
+
+            order.status = "Completed"
+            order.save()
+
+            # apply sponsor funding
+            if sponsor_used > 0:
+                apply_funding(course, sponsor_used)
+
+            Enrollment.objects.get_or_create(
+                student=user,
+                course=course
+            )
+
+            return Response(
+                {
+                    "message": "Order placed successfully.",
+                    "enrolled": True,
+                    "course_id": course.id
+                },
+                status=status.HTTP_200_OK
+            )
+
+        # ESEWA PAYMENT
+        if payment_type == "esewa":
+
+            product_code = settings.ESEWA_PRODUCT_CODE
+            secret_key = settings.ESEWA_SECRET_KEY
+
+            total_amount = format(final_price, ".2f")
+
+            signature = generate_signature(
+                total_amount,
+                transaction_uuid,
+                product_code,
+                secret_key
+            )
+
+            success_url = request.build_absolute_uri(
+                reverse("payment_success_api")
+            )
+
+            failure_url = request.build_absolute_uri(
+                reverse("payment_fail_api")
+            )
+
+            return Response(
+                {
+                    "payment_url": "https://rc-epay.esewa.com.np/api/epay/main/v2/form",
+                    "payment_data": {
+                        "amount": total_amount,
+                        "tax_amount": "0",
+                        "total_amount": total_amount,
+                        "transaction_uuid": transaction_uuid,
+                        "product_code": product_code,
+                        "success_url": success_url,
+                        "failure_url": failure_url,
+                        "signature": signature
+                    }
+                },
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            {"detail": "Invalid request."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
     
+class EsewaSuccessAPIView(APIView):
+    permission_classes = [IsStudent]
+
+    def get(self, request):
+        transaction_uuid = request.GET.get("transaction_uuid")
+        order = get_object_or_404(Order, transaction_uuid)
+        order.status = "Completed"
+        order.save()
+
+        Enrollment.objects.get_or_create(
+            student = order.user,
+            course = order.course
+        )
+
+        return Response({
+            "message": "Payment successful."
+        })
+
+class EsewaFailAPIView(APIView):
+    permission_classes = [IsStudent]
+
+    def get(self, request):
+        transaction_uuid = request.GET.get("transaction_uuid")
+        order = get_object_or_404(Order, transaction_uuid)
+        order.status = "Failed"
+        order.save()
+
+        return Response({
+            "message": "Payment Failed."
+        })
+
 # Enroll in a course
 class EnrollCourseAPIView(APIView):
     permission_classes = [IsStudent]
@@ -227,15 +494,6 @@ class SubmitAssignmentAPIView(APIView):
             },
             status=status.HTTP_201_CREATED
         )
-
-# View grades
-class MyGradesAPIView(APIView):
-    permission_classes = [IsStudent]
-
-    def get(self, request):
-        submissions = Submission.objects.filter(student=request.user)
-        serializer = SubmissionSerializer(submissions, many=True)
-        return Response(serializer.data)
 
 # Create a course
 class CourseCreateAPIView(APIView):

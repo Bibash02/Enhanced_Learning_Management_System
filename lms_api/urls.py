@@ -5,7 +5,6 @@ urlpatterns = [
     path('register/', RegisterAPIView.as_view(), name='register'),
     path('login/', LoginAPIView.as_view(), name='login'),
 
-
     path('instructor/courses/list/', InstructorCoursesAPIView.as_view(), name='my-courses'),
     path('instructor/courses/list/<int:course_id>/edit/', CourseUpdateAPIView.as_view(), name='edit-course'),
     path('instructor/courses/create/', CourseCreateAPIView.as_view(), name='create-course'),
@@ -14,12 +13,15 @@ urlpatterns = [
     path('instructor/submissions/<int:submission_id>/grade/', GradeSubmissionAPIView.as_view(), name='grade-submission'),
     
     path('student/courses/', StudentCourseListAPIView.as_view(), name='student_course_list'),
+
+    path('student/courses/<int:course_id>/checkout/', CheckoutAPIView.as_view(), name='checkout'),
+    path('student/payment/esewa/success', EsewaSuccessAPIView.as_view(), name='payment-success'),
+    path('student/payment/esewa/fail', EsewaFailAPIView.as_view(), name='payment-fail'),
     path('student/courses/<int:course_id>/', StudentCourseDetailAPIView.as_view(), name='student_course_detail'),
     path('student/courses/enroll/<int:course_id>/', EnrollCourseAPIView.as_view(), name='enroll-course'),
     path('student/courses/enrolled/', StudentEnrolledCoursesAPIView.as_view(), name='student_enrolled_courses'),
     path('student/courses/<int:course_id>/assignments/', CourseAssignmentsAPIView.as_view(), name='course-assignments'),
     path('student/courses/<int:course_id>/assignments/<int:assignment_id>/submit/', SubmitAssignmentAPIView.as_view(), name='submit-assignment'),
-    path('student/grades/', MyGradesAPIView.as_view(), name='my-grades'),
 
     path('sponsor/students/', SponsorStudentListAPIView.as_view(), name='sponsor-student-list'),
     path('sponsor/fund/student/', FundStudentAPIView.as_view(), name='fund-student'),
