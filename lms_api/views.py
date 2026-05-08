@@ -1,5 +1,4 @@
 from decimal import Decimal
-
 from django.urls import reverse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,7 +8,6 @@ from rest_framework.permissions import AllowAny
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
-
 from lms.utils import generate_signature
 from lms.views import apply_funding
 from .permissions import IsStudent, IsInstructor, IsSponsor
@@ -21,7 +19,8 @@ from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.pagination import PageNumberPagination
 import uuid
-
+import base64
+import json
 from django.contrib.auth.models import User
 from .serializers import *
 from .models import *
@@ -34,6 +33,26 @@ class RegisterAPIView(APIView):
 
         if serializer.is_valid():
             user = serializer.save()
+
+            # SEND EMAIL AFTER SUCCESS
+            send_mail(
+                subject="Welcome to Our LMS Platform",
+                message=f"""
+                    Hello {user.get_full_name() or user.username},
+
+                    Your account has been successfully created.
+
+                    You can now login and start learning courses.
+
+                    Thank you for joining us!
+
+                    Best regards,
+                    LMS Team
+                """,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
 
             return Response({
                 "message": "Account created successfully!",
@@ -73,6 +92,11 @@ class LoginAPIView(APIView):
             return Response({"error": "Invalid email or password"}, status=400)
 
         return Response(serializer.errors, status=400)
+
+class CoursePagination(PageNumberPagination):
+    page_size = 2
+    page_size_query_param = 'page_size'
+    max_page_size = 10
     
 # View all published courses
 class StudentCourseListAPIView(ListAPIView):
@@ -80,6 +104,7 @@ class StudentCourseListAPIView(ListAPIView):
     permission_classes = [IsStudent]
     filter_backends = [SearchFilter]
     search_fields = ['title', 'level', 'instructor__username',]
+    pagination_class = CoursePagination
 
     def get_queryset(self):
         return Course.objects.filter(is_published=True)
@@ -304,15 +329,18 @@ class CheckoutAPIView(APIView):
                 {
                     "payment_url": "https://rc-epay.esewa.com.np/api/epay/main/v2/form",
                     "payment_data": {
-                        "amount": total_amount,
-                        "tax_amount": "0",
-                        "total_amount": total_amount,
-                        "transaction_uuid": transaction_uuid,
-                        "product_code": product_code,
-                        "success_url": success_url,
-                        "failure_url": failure_url,
-                        "signature": signature
-                    }
+                    "amount": total_amount,
+                    "tax_amount": "0",
+                    "total_amount": total_amount,
+                    "transaction_uuid": transaction_uuid,
+                    "product_code": product_code,
+                    "product_service_charge": "0",
+                    "product_delivery_charge": "0",
+                    "success_url": success_url,
+                    "failure_url": failure_url,
+                    "signed_field_names": "total_amount,transaction_uuid,product_code",
+                    "signature": signature
+                }
                 },
                 status=status.HTTP_200_OK
             )
@@ -321,33 +349,59 @@ class CheckoutAPIView(APIView):
             {"detail": "Invalid request."},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
 class EsewaSuccessAPIView(APIView):
-    permission_classes = [IsStudent]
+    permission_classes = [AllowAny]
 
     def get(self, request):
-        transaction_uuid = request.GET.get("transaction_uuid")
-        order = get_object_or_404(Order, transaction_uuid)
-        order.status = "Completed"
-        order.save()
+        encoded_data = request.GET.get("data")
 
-        Enrollment.objects.get_or_create(
-            student = order.user,
-            course = order.course
-        )
+        if not encoded_data:
+            return Response({
+                "detail": "Missing payment data."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            decoded_data = base64.b64decode(encoded_data).decode("utf-8")
+            payment_data = json.loads(decoded_data)
 
-        return Response({
-            "message": "Payment successful."
-        })
+            transaction_uuid = payment_data.get("transaction_uuid")
+            payment_status = payment_data.get("status")
 
+            order = get_object_or_404(Order, transaction_uuid = transaction_uuid)
+
+            if payment_status == "COMPLETE":
+                order.status = "Completed"
+                order.save()
+
+                Enrollment.objects.get_or_create(student = request.user, course = order.course)
+
+                return Response({
+                    "message": "Payment Successful."
+                })
+            order.status = "Failed"
+            order.save()
+
+            return Response({
+                "message": "Payment Failed."
+            })
+        except Exception as e:
+            return Response({
+                "detail": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
 class EsewaFailAPIView(APIView):
-    permission_classes = [IsStudent]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         transaction_uuid = request.GET.get("transaction_uuid")
-        order = get_object_or_404(Order, transaction_uuid)
-        order.status = "Failed"
-        order.save()
+        
+        if transaction_uuid:
+            order = Order.objects.filter(transaction_uuid = transaction_uuid).first()
+
+            if order:
+                order.status = "Failed"
+                order.save()
 
         return Response({
             "message": "Payment Failed."
@@ -369,18 +423,55 @@ class EnrollCourseAPIView(APIView):
             return Response({"detail": "Already enrolled."}, status=status.HTTP_400_BAD_REQUEST)
         
         # Send email to instructor
-        instructor = course.instructor    
-        send_enrollment_email(
-            student=request.user,
-            instructor=instructor,
-            course=course
+        instructor = course.instructor
+        student = request.user
+
+        # email to instructor
+        send_mail(
+            subject=f"New Student Enrolled: {course.title}",
+            message=f"""
+                Hello {instructor.get_full_name() or instructor.username},
+
+                A new student has enrolled in your course.
+
+                Course: {course.title}
+                Student: {student.get_full_name() or student.username}
+
+                Regards,
+                LMS System
+            """,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[instructor.email],
+            fail_silently=False,
         )
+
+        # email to student
+        send_mail(
+            subject="Enrollment Successful 🎓",
+            message=f"""
+                Hello {student.get_full_name() or student.username},
+
+                You have successfully enrolled in:
+
+                Course: {course.title}
+
+                You can now start learning from your dashboard.
+
+                Good luck!
+                LMS Team
+            """,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[student.email],
+            fail_silently=False,
+        )
+
         serializer = EnrollmentSerializer(enrollment)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 # View all enrolled courses by student
 class StudentEnrolledCoursesAPIView(APIView):
     permission_classes = [IsStudent]
+    pagination_class = CoursePagination
 
     def get(self, request):
         enrollment = Enrollment.objects.filter(student=request.user)
@@ -437,7 +528,6 @@ class SubmitAssignmentAPIView(APIView):
         answers = request.data.get('answers', [])
 
         # fix JSON string issue
-        import json
         if isinstance(answers, str):
             try:
                 answers = json.loads(answers)
@@ -487,6 +577,29 @@ class SubmitAssignmentAPIView(APIView):
                 answer_file=answer_file
             )
 
+            # email to instructor
+            instructor = assignment.course.instructor
+
+        send_mail(
+            subject=f"New Assignment Submission: {assignment.title}",
+            message=f"""
+                Hello {instructor.get_full_name() or instructor.username},
+
+                A student has submitted an assignment.
+
+                Assignment: {assignment.title}
+                Student: {request.user.get_full_name() or request.user.username}
+
+                Please review it from your dashboard.
+
+                Regards,
+                LMS System
+            """,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[instructor.email],
+            fail_silently=False,
+        )
+
         return Response(
             {
                 "message": "Assignment submitted successfully",
@@ -512,6 +625,7 @@ class InstructorCoursesAPIView(ListAPIView):
     serializer_class = CourseSerializer
     filter_backends = [SearchFilter]
     search_fields = ['title',]
+    pagination_class = CoursePagination
 
     def get_queryset(self):
         return Course.objects.filter(instructor=self.request.user)
@@ -592,6 +706,7 @@ class AssignmentCreateAPIView(APIView):
 # View submissions for an assignment
 class AssignmentSubmissionsAPIView(APIView):
     permission_classes = [IsInstructor]
+    pagination_class = CoursePagination
 
     def get(self, request, assignment_id):
         assignment = get_object_or_404(Assignment, id=assignment_id, created_by=request.user)
@@ -738,9 +853,10 @@ class SponsorStudentListAPIView(ListAPIView):
     serializer_class = StudentListSerializer
     filter_backends = [SearchFilter]
     search_fields = ['user__username', 'user__email',]
+    pagination_class = CoursePagination
 
     def get_queryset(self):
-        return UserProfile.objects.filter(role='student').select_related('user')  # adjust if your user model has "role"
+        return UserProfile.objects.filter(role='student').select_related('user')  
     
 # Fund a student
 class FundStudentAPIView(APIView):
@@ -816,6 +932,7 @@ class FundStudentAPIView(APIView):
 # List all students funded by sponsor
 class SponsoredStudentsListAPIView(APIView):
     permission_classes = [IsSponsor]
+    pagination_class = CoursePagination
 
     def get(self, request):
         sponsor = request.user
@@ -841,6 +958,7 @@ class SponsoredStudentsListAPIView(APIView):
 # List all courses available for funding
 class CourseListForFundingAPIView(APIView):
     permission_classes = [IsSponsor]
+    pagination_class = CoursePagination
 
     def get(self, request):
         courses = Course.objects.all()  
@@ -924,6 +1042,7 @@ class FundCourseAPIView(APIView):
 # List all courses funded by sponsor
 class SponsoredCoursesListAPIView(APIView):
     permission_classes = [IsSponsor]
+    pagination_class = CoursePagination
 
     def get(self, request):
         sponsor = request.user
@@ -948,12 +1067,10 @@ class SponsoredCoursesListAPIView(APIView):
 # View funding history
 class FundingHistoryAPIView(APIView):
     permission_classes = [IsSponsor]
+    pagination_class = CoursePagination
 
     def get(self, request):
         fundings = Funding.objects.filter(sponsor=request.user).order_by('-funded_at')
 
-        paginator = PageNumberPagination()
-        paginator.page_size = 5
-        result_page = paginator.paginate_queryset(fundings, request)
-        serializer = FundingHistorySerializer(result_page, many=True)
+        serializer = FundingHistorySerializer(fundings, many=True)
         return Response(serializer.data)

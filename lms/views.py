@@ -236,19 +236,6 @@ def course_detail(request, course_id):
 
     return render(request, 'course_detail.html', context)
 
-
-# @login_required
-# def enroll_course(request, course_id):
-#     course = get_object_or_404(Course, id=course_id, is_published=True)
-    
-#     if Enrollment.objects.filter(student=request.user, course=course).exists():
-#         messages.warning(request, 'You are already enrolled in this course.')
-#     else:
-#         Enrollment.objects.create(student=request.user, course=course)
-#         messages.success(request, f'Successfully enrolled in {course.title}')
-    
-#     return redirect('course_detail', course_id=course_id)
-
 def course_content(request, course_id):
     course = get_object_or_404(Course, id=course_id, is_published=True)
     
@@ -319,85 +306,6 @@ def course_content(request, course_id):
                        {'name': course.title, 'active': True}],
     }
     return render(request, 'course_detail.html', context)
-
-# @login_required
-# def course_content(request, course_id):
-#     course = get_object_or_404(Course, id=course_id, is_published=True)
-    
-#     # Check enrollment and instructor status
-#     enrollment = Enrollment.objects.filter(course=course, student=request.user).first()
-#     is_instructor = course.instructor == request.user
-#     is_enrolled = enrollment is not None
-    
-#     # Non-enrolled, non-instructor: show enroll prompt
-#     if not is_enrolled and not is_instructor:
-#         context = {
-#             'course': course,
-#             'can_enroll': True,
-#             'breadcrumb': [
-#                 {'name': 'Dashboard', 'url': 'student_dashboard'},
-#                 {'name': course.title, 'active': True}
-#             ],
-#         }
-#         return render(request, 'course_detail.html', context)
-    
-#     # Fetch lessons (use related_name from Lesson model)
-#     lessons = course.course_lessons.select_related('module').order_by('order')
-#     total_lessons = lessons.count()
-
-#     # Calculate progress for enrolled users
-#     course_progress = 0
-#     completed_lessons = 0
-#     if is_enrolled:
-#         completed_lessons = StudentLessonCompletion.objects.filter(
-#             enrollment=enrollment, is_completed=True
-#         ).count()
-#         course_progress = (completed_lessons / total_lessons * 100) if total_lessons > 0 else 0
-        
-#         # Update enrollment progress
-#         enrollment.progress = course_progress
-#         enrollment.save()
-        
-#         # Handle POST: mark lesson complete
-#         if request.method == 'POST':
-#             lesson_id = request.POST.get('lesson_id')
-#             if lesson_id:
-#                 lesson = get_object_or_404(Lesson, id=lesson_id, course=course)
-#                 completion, created = StudentLessonCompletion.objects.get_or_create(
-#                     enrollment=enrollment,
-#                     lesson=lesson,
-#                     defaults={'is_completed': True}
-#                 )
-#                 if created:
-#                     messages.success(request, f'"{lesson.title}" complete! Progress updated.')
-#                 return redirect('course_content', course_id=course.id)
-#     else:
-#         # For instructors (no enrollment needed)
-#         course_progress = 0
-#         completed_lessons = 0
-    
-#     # Fetch upcoming assignments
-#     assignments = Assignment.objects.filter(
-#         course=course,
-#         due_date__gte=timezone.now()
-#     ).order_by('due_date')
-    
-#     context = {
-#         'course': course,
-#         'enrollment': enrollment,
-#         'lessons': lessons,
-#         'assignments': assignments,
-#         'course_progress': course_progress,
-#         'completed_lessons': completed_lessons,
-#         'total_lessons': total_lessons,
-#         'is_instructor': is_instructor,
-#         'is_enrolled': is_enrolled,
-#         'breadcrumb': [
-#             {'name': 'Dashboard', 'url': 'student_dashboard' if not is_instructor else 'instructor_dashboard'},
-#             {'name': course.title, 'active': True}
-#         ],
-#     }
-#     return render(request, 'course_detail.html', context)
 
 @login_required
 def lesson_detail(request, lesson_id):
@@ -524,46 +432,6 @@ def complete_course(request, course_id):
 
     return redirect("student_dashboard")
 
-# @login_required
-# def assignment_list(request, course_id):
-#     course = get_object_or_404(Course, id=course_id)
-#     enrollment = get_object_or_404(Enrollment, student=request.user, course=course)
-#     assignments = course.assignments.all()
-#     context = {
-#         'course': course,
-#         'assignments': assignments,
-#         'enrollment': enrollment,
-#     }
-#     return render(request, 'assignment_list.html', context)
-
-# @login_required
-# def assignment_detail(request, course_id, assignment_id):
-#     assignment = get_object_or_404(Assignment, id=assignment_id, course_id=course_id)
-#     submission = Submission.objects.filter(assignment=assignment, student=request.user).first()
-#     if request.method == 'POST':
-#         form = SubmissionForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             if submission:
-#                 submission.content = form.cleaned_data['content']
-#                 submission.file = form.cleaned_data['file'] or submission.file
-#                 submission.save()
-#                 messages.success(request, 'Submission updated successfully!')
-#             else:
-#                 submission = form.save(commit=False)
-#                 submission.assignment = assignment
-#                 submission.student = request.user
-#                 submission.save()
-#                 messages.success(request, 'Assignment submitted successfully!')
-#             return redirect('assignment_detail', course_id=course_id, assignment_id=assignment_id)
-#     else:
-#         form = SubmissionForm(instance=submission)
-#     context = {
-#         'assignment': assignment,
-#         'submission': submission,
-#         'form': form,
-#     }
-#     return render(request, 'assignment_detail.html', context)
-
 @login_required
 def assignment_delete(request, assignment_id):
     assignment = get_object_or_404(Assignment, pk=assignment_id)
@@ -573,48 +441,6 @@ def assignment_delete(request, assignment_id):
     else:
         messages.error(request, "You do not have permission to delete this assignment.")
     return redirect('instructor_dashboard')
-
-#@login_required
-# def discussion_list(request, course_id):
-#     course = get_object_or_404(Course, id=course_id)
-#     discussions = course.discussions.prefetch_related('comments').all()
-#     if request.method == 'POST':
-#         form = DiscussionForm(request.POST)
-#         if form.is_valid():
-#             discussion = form.save(commit=False)
-#             discussion.course = course
-#             discussion.created_by = request.user
-#             discussion.save()
-#             messages.success(request, 'Discussion created successfully!')
-#             return redirect('discussion_list', course_id=course_id)
-#     else:
-#         form = DiscussionForm()
-#     context = {
-#         'course': course,
-#         'discussions': discussions,
-#         'form': form,
-#     }
-#     return render(request, 'discussion_list.html', context)
-
-# @login_required
-# def discussion_detail(request, course_id, discussion_id):
-#     discussion = get_object_or_404(Discussion, id=discussion_id, course_id=course_id)
-#     if request.method == 'POST':
-#         form = CommentForm(request.POST)
-#         if form.is_valid():
-#             comment = form.save(commit=False)
-#             comment.discussion = discussion
-#             comment.author = request.user
-#             comment.save()
-#             messages.success(request, 'Comment added successfully!')
-#             return redirect('discussion_detail', course_id=course_id, discussion_id=discussion_id)
-#     else:
-#         form = CommentForm()
-#     context = {
-#         'discussion': discussion,
-#         'form': form,
-#     }
-#     return render(request, 'discussion_detail.html', context)
 
 @login_required
 def student_dashboard(request):
