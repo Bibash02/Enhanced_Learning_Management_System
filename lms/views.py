@@ -1,5 +1,3 @@
-from email.mime import message
-
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
@@ -888,26 +886,6 @@ def fund_course_action(request, student_id):
     messages.success(request, f"Successfully funded {amount} to {student.first_name}")
     return redirect('sponsor_dashboard')
 
-
-# @login_required
-# def fund_course_page(request):
-#     # Get all courses
-#     courses = Course.objects.all()
-
-#     # Get the sponsor profile for the logged-in user
-#     try:
-#         user_profile = UserProfile.objects.get(user=request.user, role='sponsor')
-#         sponsor_name = request.user.get_full_name()  # or request.user.username if you prefer
-#     except UserProfile.DoesNotExist:
-#         sponsor_name = "Sponsor"  # fallback if somehow profile not found
-
-#     context = {
-#         "courses": courses,
-#         "sponsor_name": sponsor_name,
-#     }
-
-#     return render(request, "fund_course_page.html", context)
-
 @login_required
 def fund_course_page(request):
     sponsor = request.user
@@ -1529,48 +1507,6 @@ def payment_fail(request):
 @login_required
 def payment_history(request):
     pass
-
-# @login_required
-# def download_invoice(request, payment_id):
-#     payment = Payment.objects.get(id=payment_id, student=request.user)
-#     pdf_buffer = generate_invoice(payment)
-#     return FileResponse(pdf_buffer, as_attachment=True, filename=f"Invoice_{payment.transaction_uuid}.pdf")
-
-# @login_required
-# def export_payments_csv(request):
-#     payments = Payment.objects.filter(student=request.user)
-
-#     import csv
-#     from django.http import HttpResponse
-
-#     response = HttpResponse(content_type='text/csv')
-#     response['Content-Disposition'] = 'attachment; filename="payment_history.csv"'
-#     writer = csv.writer(response)
-#     writer.writerow(["Course", "Amount", "Transaction ID", "Status", "Date"])
-#     for p in payments:
-#         writer.writerow([p.course.title, p.amount, p.transaction_uuid, p.status, p.created_at])
-#     return response
-
-# @login_required
-# def export_payments_pdf(request):
-#     payments = Payment.objects.filter(student=request.user)
-
-#     response = HttpResponse(content_type='application/pdf')
-#     response['Content-Disposition'] = 'attachment; filename="payment_history.pdf"'
-
-#     p = canvas.Canvas(response, pagesize=letter)
-#     width, height = letter
-#     y = height - 50
-#     p.setFont("Helvetica-Bold", 16)
-#     p.drawString(50, y, "Payment History Report")
-#     y -= 40
-#     p.setFont("Helvetica", 12)
-#     for payment in payments:
-#         text = f"{payment.created_at} | {payment.course.title} | Rs. {payment.amount} | {payment.status}"
-#         p.drawString(50, y, text)
-#         y -= 20
-#     p.save()
-#     return response
 
 def some_error_page(request):
     return render(request, "error1.html")

@@ -2,8 +2,7 @@ from decimal import Decimal
 from django.urls import reverse
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
-from rest_framework import generics, status
+from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
@@ -713,63 +712,6 @@ class AssignmentSubmissionsAPIView(APIView):
         submissions = Submission.objects.filter(assignment=assignment)
         serializer = SubmissionSerializer(submissions, many=True)
         return Response(serializer.data)
-
-# Grade a submission
-# class GradeSubmissionAPIView(APIView):
-#     permission_classes = [IsInstructor]
-
-#     def get(self, request, submission_id):
-#         submission = get_object_or_404(
-#             Submission, id = submission_id
-#         )
-#         serializer = SubmissionSerializer(submission)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-
-#     def post(self, request, submission_id):
-#         submission = get_object_or_404(
-#             Submission,
-#             id=submission_id,
-#             assignment__created_by=request.user
-#         )
-#         grade = request.data.get('grade')
-#         feedback = request.data.get('feedback', '')
-
-#         submission.grade = grade
-#         submission.feedback = feedback
-#         submission.status = 'graded'
-#         submission.save()
-
-#         # Send email to the student
-#         student_user = submission.student  # assuming submission.student is a User instance
-#         student_email = getattr(student_user, 'email', None)
-#         from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
-
-#         if student_email and from_email:
-#             subject = f"Your Assignment '{submission.assignment.title}' has been Graded!"
-#             message = (
-#                 f"Hello {student_user.first_name or student_user.username},\n\n"
-#                 f"Your submission for the assignment '{submission.assignment.title}' has been graded.\n"
-#                 f"Grade: {grade}\n"
-#                 f"Feedback: {feedback}\n\n"
-#                 "Best regards,\n"
-#                 "LMS Team"
-#             )
-#             try:
-#                 send_mail(subject, message, from_email, [student_email], fail_silently=False)
-#                 email_sent = True
-#             except Exception as e:
-#                 print("Email sending error:", e)
-#                 email_sent = False
-#         else:
-#             email_sent = False
-
-#         return Response(
-#             {
-#                 "submission": SubmissionSerializer(submission).data,
-#                 "email_sent": email_sent
-#             },
-#             status=status.HTTP_200_OK
-#         )
 
 class GradeSubmissionAPIView(APIView):
     permission_classes = [IsInstructor]
