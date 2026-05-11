@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
 
+    'drf_yasg',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -155,7 +157,8 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
-    'DEFAULT_FILTER_BACKENDS': ["rest_framework.filters.SearchFilter",]
+    'DEFAULT_FILTER_BACKENDS': ["rest_framework.filters.SearchFilter",],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # Looking to send emails in production? Check out our Email API/SMTP product!
@@ -176,4 +179,10 @@ JAZZMIN_SETTINGS = {
     "site_header": "Admin Dashboard",
     "welcome_sign": "Welcome to My Admin",
     "show_ui_builder": True,
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Learning API',
+    'DESCRIPTION': 'Enhanced Learning Management System API',
+    'VERSION': '1.0.0',
 }
