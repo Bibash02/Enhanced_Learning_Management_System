@@ -14,9 +14,9 @@ urlpatterns = [
     
     path('student/courses/', StudentCourseListAPIView.as_view(), name='student_course_list'),
 
-    path('student/courses/<int:course_id>/checkout/', CheckoutAPIView.as_view(), name='checkout'),
-    path('student/payment/esewa/success', EsewaSuccessAPIView.as_view(), name='payment_success_api'),
-    path('student/payment/esewa/fail', EsewaFailAPIView.as_view(), name='payment_fail_api'),
+    # path('student/courses/<int:course_id>/checkout/', CheckoutAPIView.as_view(), name='checkout'),
+    # path('student/payment/esewa/success', EsewaSuccessAPIView.as_view(), name='payment_success_api'),
+    # path('student/payment/esewa/fail', EsewaFailAPIView.as_view(), name='payment_fail_api'),
     path('student/courses/<int:course_id>/', StudentCourseDetailAPIView.as_view(), name='student_course_detail'),
     path('student/courses/enroll/<int:course_id>/', EnrollCourseAPIView.as_view(), name='enroll-course'),
     path('student/courses/enrolled/', StudentEnrolledCoursesAPIView.as_view(), name='student_enrolled_courses'),

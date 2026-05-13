@@ -61,7 +61,7 @@ class RegisterAPIView(APIView):
 
         return Response(serializer.errors, status=400)
     
-class LoginAPIView(APIView):
+class  LoginAPIView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -117,294 +117,294 @@ class StudentCourseDetailAPIView(APIView):
         serializer = CourseSerializer(course)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-class CheckoutAPIView(APIView):
-    permission_classes = [IsStudent]
+# class CheckoutAPIView(APIView):
+#     permission_classes = [IsStudent]
 
-    def post(self, request, course_id):
+#     def post(self, request, course_id):
 
-        user = request.user
+#         user = request.user
 
-        course = get_object_or_404(
-            Course,
-            id=course_id,
-            is_published=True
-        )
+#         course = get_object_or_404(
+#             Course,
+#             id=course_id,
+#             is_published=True
+#         )
 
-        # already enrolled
-        if Enrollment.objects.filter(
-            student=user,
-            course=course
-        ).exists():
-            return Response(
-                {"detail": "You are already enrolled in this course."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+#         # already enrolled
+#         if Enrollment.objects.filter(
+#             student=user,
+#             course=course
+#         ).exists():
+#             return Response(
+#                 {"detail": "You are already enrolled in this course."},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
 
-        # already purchased
-        if Order.objects.filter(
-            user=user,
-            course=course,
-            status="Completed"
-        ).exists():
-            return Response(
-                {"detail": "You already purchased this course."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+#         # already purchased
+#         if Order.objects.filter(
+#             user=user,
+#             course=course,
+#             status="Completed"
+#         ).exists():
+#             return Response(
+#                 {"detail": "You already purchased this course."},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
 
-        # VALIDATE INPUTS
-        payment_type = request.data.get("payment_type", "").strip()
+#         # VALIDATE INPUTS
+#         payment_type = request.data.get("payment_type", "").strip()
 
-        if not payment_type:
-            return Response(
-                {"detail": "Payment type is required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+#         if not payment_type:
+#             return Response(
+#                 {"detail": "Payment type is required."},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
 
-        if payment_type not in ["esewa", "cod"]:
-            return Response(
-                {"detail": "Invalid payment type."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+#         if payment_type not in ["esewa", "cod"]:
+#             return Response(
+#                 {"detail": "Invalid payment type."},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
 
-        full_name = request.data.get("name", "").strip()
-        email = request.data.get("email", "").strip()
-        phone = request.data.get("phone", "").strip()
-        address = request.data.get("address", "").strip()
-        city = request.data.get("city", "").strip()
+#         full_name = request.data.get("name", "").strip()
+#         email = request.data.get("email", "").strip()
+#         phone = request.data.get("phone", "").strip()
+#         address = request.data.get("address", "").strip()
+#         city = request.data.get("city", "").strip()
 
-        if not full_name:
-            return Response(
-                {"detail": "Full name is required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+#         if not full_name:
+#             return Response(
+#                 {"detail": "Full name is required."},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
 
-        if not email:
-            return Response(
-                {"detail": "Email is required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+#         if not email:
+#             return Response(
+#                 {"detail": "Email is required."},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
 
-        if not phone:
-            return Response(
-                {"detail": "Phone number is required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+#         if not phone:
+#             return Response(
+#                 {"detail": "Phone number is required."},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
 
-        if not address:
-            return Response(
-                {"detail": "Address is required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+#         if not address:
+#             return Response(
+#                 {"detail": "Address is required."},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
 
-        if not city:
-            return Response(
-                {"detail": "City is required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+#         if not city:
+#             return Response(
+#                 {"detail": "City is required."},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
 
-        # SPONSORSHIP LOGIC
-        transaction_uuid = str(uuid.uuid4())
+#         # SPONSORSHIP LOGIC
+#         transaction_uuid = str(uuid.uuid4())
 
-        fundings = Funding.objects.filter(
-            course=course,
-            status="Completed"
-        )
+#         fundings = Funding.objects.filter(
+#             course=course,
+#             status="Completed"
+#         )
 
-        available_funding = sum(
-            (f.amount - f.used_amount)
-            for f in fundings
-        )
+#         available_funding = sum(
+#             (f.amount - f.used_amount)
+#             for f in fundings
+#         )
 
-        course_price = Decimal(str(course.price))
+#         course_price = Decimal(str(course.price))
 
-        sponsor_used = min(course_price, available_funding)
+#         sponsor_used = min(course_price, available_funding)
 
-        final_price = course_price - sponsor_used
+#         final_price = course_price - sponsor_used
 
-        if final_price < 0:
-            final_price = Decimal("0.00")
+#         if final_price < 0:
+#             final_price = Decimal("0.00")
 
-        # FULLY SPONSORED COURSE
-        if final_price == 0:
+#         # FULLY SPONSORED COURSE
+#         if final_price == 0:
 
-            order = Order.objects.create(
-                user=user,
-                course=course,
-                full_name=full_name,
-                email=email,
-                phone=phone,
-                address=address,
-                city=city,
-                country="Nepal",
-                amount=0,
-                sponsor_used=sponsor_used,
-                payment_type="cod",
-                transaction_uuid=transaction_uuid,
-                status="Sponsored"
-            )
+#             order = Order.objects.create(
+#                 user=user,
+#                 course=course,
+#                 full_name=full_name,
+#                 email=email,
+#                 phone=phone,
+#                 address=address,
+#                 city=city,
+#                 country="Nepal",
+#                 amount=0,
+#                 sponsor_used=sponsor_used,
+#                 payment_type="cod",
+#                 transaction_uuid=transaction_uuid,
+#                 status="Sponsored"
+#             )
 
-            # apply funding
-            apply_funding(course, sponsor_used)
+#             # apply funding
+#             apply_funding(course, sponsor_used)
 
-            Enrollment.objects.get_or_create(
-                student=user,
-                course=course
-            )
+#             Enrollment.objects.get_or_create(
+#                 student=user,
+#                 course=course
+#             )
 
-            return Response(
-                {
-                    "message": "Course fully sponsored.",
-                    "enrolled": True,
-                    "course_id": course.id
-                },
-                status=status.HTTP_200_OK
-            )
+#             return Response(
+#                 {
+#                     "message": "Course fully sponsored.",
+#                     "enrolled": True,
+#                     "course_id": course.id
+#                 },
+#                 status=status.HTTP_200_OK
+#             )
 
-        # CREATE ORDER
-        order = Order.objects.create(
-            user=user,
-            course=course,
-            full_name=full_name,
-            email=email,
-            phone=phone,
-            address=address,
-            city=city,
-            country="Nepal",
-            amount=final_price,
-            sponsor_used=sponsor_used,
-            payment_type=payment_type,
-            transaction_uuid=transaction_uuid,
-            status="Pending"
-        )
+#         # CREATE ORDER
+#         order = Order.objects.create(
+#             user=user,
+#             course=course,
+#             full_name=full_name,
+#             email=email,
+#             phone=phone,
+#             address=address,
+#             city=city,
+#             country="Nepal",
+#             amount=final_price,
+#             sponsor_used=sponsor_used,
+#             payment_type=payment_type,
+#             transaction_uuid=transaction_uuid,
+#             status="Pending"
+#         )
 
-        # CASH ON DELIVERY
-        if payment_type == "cod":
+#         # CASH ON DELIVERY
+#         if payment_type == "cod":
 
-            order.status = "Completed"
-            order.save()
+#             order.status = "Completed"
+#             order.save()
 
-            # apply sponsor funding
-            if sponsor_used > 0:
-                apply_funding(course, sponsor_used)
+#             # apply sponsor funding
+#             if sponsor_used > 0:
+#                 apply_funding(course, sponsor_used)
 
-            Enrollment.objects.get_or_create(
-                student=user,
-                course=course
-            )
+#             Enrollment.objects.get_or_create(
+#                 student=user,
+#                 course=course
+#             )
 
-            return Response(
-                {
-                    "message": "Order placed successfully.",
-                    "enrolled": True,
-                    "course_id": course.id
-                },
-                status=status.HTTP_200_OK
-            )
+#             return Response(
+#                 {
+#                     "message": "Order placed successfully.",
+#                     "enrolled": True,
+#                     "course_id": course.id
+#                 },
+#                 status=status.HTTP_200_OK
+#             )
 
-        # ESEWA PAYMENT
-        if payment_type == "esewa":
+#         # ESEWA PAYMENT
+#         if payment_type == "esewa":
 
-            product_code = settings.ESEWA_PRODUCT_CODE
-            secret_key = settings.ESEWA_SECRET_KEY
+#             product_code = settings.ESEWA_PRODUCT_CODE
+#             secret_key = settings.ESEWA_SECRET_KEY
 
-            total_amount = format(final_price, ".2f")
+#             total_amount = format(final_price, ".2f")
 
-            signature = generate_signature(
-                total_amount,
-                transaction_uuid,
-                product_code,
-                secret_key
-            )
+#             signature = generate_signature(
+#                 total_amount,
+#                 transaction_uuid,
+#                 product_code,
+#                 secret_key
+#             )
 
-            success_url = request.build_absolute_uri(
-                reverse("payment_success_api")
-            )
+#             success_url = request.build_absolute_uri(
+#                 reverse("payment_success_api")
+#             )
 
-            failure_url = request.build_absolute_uri(
-                reverse("payment_fail_api")
-            )
+#             failure_url = request.build_absolute_uri(
+#                 reverse("payment_fail_api")
+#             )
 
-            return Response(
-                {
-                    "payment_url": "https://rc-epay.esewa.com.np/api/epay/main/v2/form",
-                    "payment_data": {
-                    "amount": total_amount,
-                    "tax_amount": "0",
-                    "total_amount": total_amount,
-                    "transaction_uuid": transaction_uuid,
-                    "product_code": product_code,
-                    "product_service_charge": "0",
-                    "product_delivery_charge": "0",
-                    "success_url": success_url,
-                    "failure_url": failure_url,
-                    "signed_field_names": "total_amount,transaction_uuid,product_code",
-                    "signature": signature
-                }
-                },
-                status=status.HTTP_200_OK
-            )
+#             return Response(
+#                 {
+#                     "payment_url": "https://rc-epay.esewa.com.np/api/epay/main/v2/form",
+#                     "payment_data": {
+#                     "amount": total_amount,
+#                     "tax_amount": "0",
+#                     "total_amount": total_amount,
+#                     "transaction_uuid": transaction_uuid,
+#                     "product_code": product_code,
+#                     "product_service_charge": "0",
+#                     "product_delivery_charge": "0",
+#                     "success_url": success_url,
+#                     "failure_url": failure_url,
+#                     "signed_field_names": "total_amount,transaction_uuid,product_code",
+#                     "signature": signature
+#                 }
+#                 },
+#                 status=status.HTTP_200_OK
+#             )
 
-        return Response(
-            {"detail": "Invalid request."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+#         return Response(
+#             {"detail": "Invalid request."},
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
 
-class EsewaSuccessAPIView(APIView):
-    permission_classes = [AllowAny]
+# class EsewaSuccessAPIView(APIView):
+#     permission_classes = [AllowAny]
 
-    def get(self, request):
-        encoded_data = request.GET.get("data")
+#     def get(self, request):
+#         encoded_data = request.GET.get("data")
 
-        if not encoded_data:
-            return Response({
-                "detail": "Missing payment data."
-            }, status=status.HTTP_400_BAD_REQUEST)
+#         if not encoded_data:
+#             return Response({
+#                 "detail": "Missing payment data."
+#             }, status=status.HTTP_400_BAD_REQUEST)
         
-        try:
-            decoded_data = base64.b64decode(encoded_data).decode("utf-8")
-            payment_data = json.loads(decoded_data)
+#         try:
+#             decoded_data = base64.b64decode(encoded_data).decode("utf-8")
+#             payment_data = json.loads(decoded_data)
 
-            transaction_uuid = payment_data.get("transaction_uuid")
-            payment_status = payment_data.get("status")
+#             transaction_uuid = payment_data.get("transaction_uuid")
+#             payment_status = payment_data.get("status")
 
-            order = get_object_or_404(Order, transaction_uuid = transaction_uuid)
+#             order = get_object_or_404(Order, transaction_uuid = transaction_uuid)
 
-            if payment_status == "COMPLETE":
-                order.status = "Completed"
-                order.save()
+#             if payment_status == "COMPLETE":
+#                 order.status = "Completed"
+#                 order.save()
 
-                Enrollment.objects.get_or_create(student = request.user, course = order.course)
+#                 Enrollment.objects.get_or_create(student = request.user, course = order.course)
 
-                return Response({
-                    "message": "Payment Successful."
-                })
-            order.status = "Failed"
-            order.save()
+#                 return Response({
+#                     "message": "Payment Successful."
+#                 })
+#             order.status = "Failed"
+#             order.save()
 
-            return Response({
-                "message": "Payment Failed."
-            })
-        except Exception as e:
-            return Response({
-                "detail": str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
+#             return Response({
+#                 "message": "Payment Failed."
+#             })
+#         except Exception as e:
+#             return Response({
+#                 "detail": str(e)
+#             }, status=status.HTTP_400_BAD_REQUEST)
         
-class EsewaFailAPIView(APIView):
-    permission_classes = [AllowAny]
+# class EsewaFailAPIView(APIView):
+#     permission_classes = [AllowAny]
 
-    def get(self, request):
-        transaction_uuid = request.GET.get("transaction_uuid")
+#     def get(self, request):
+#         transaction_uuid = request.GET.get("transaction_uuid")
         
-        if transaction_uuid:
-            order = Order.objects.filter(transaction_uuid = transaction_uuid).first()
+#         if transaction_uuid:
+#             order = Order.objects.filter(transaction_uuid = transaction_uuid).first()
 
-            if order:
-                order.status = "Failed"
-                order.save()
+#             if order:
+#                 order.status = "Failed"
+#                 order.save()
 
-        return Response({
-            "message": "Payment Failed."
-        })
+#         return Response({
+#             "message": "Payment Failed."
+#         })
 
 # Enroll in a course
 class EnrollCourseAPIView(APIView):
