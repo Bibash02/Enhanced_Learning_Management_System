@@ -152,7 +152,7 @@
                 <p class="lead mb-4">Discover thousands of courses from expert instructors and advance your career today.</p>
             </div>
             <div class="col-lg-6">
-                <img src="{% static 'images/pic1.jpg' %}" alt="Online Learning" class="img-fluid">
+                <img src="{% static 'images/home.jpg' %}" alt="Online Learning" class="img-fluid">
             </div>
         </div>
     </div>
@@ -182,7 +182,7 @@
                 {% if course.thumbnail %}
                 <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}">
                 {% else %}
-                <img src="{% static 'images/pic1.jpg' %}" class="card-img-top" alt="Default thumbnail">
+                <img src="{% static 'images/home.jpg' %}" class="card-img-top" alt="Default thumbnail">
                 {% endif %}
                 <div class="card-body">
                     <h5 class="card-title">{{ course.title }}</h5>
