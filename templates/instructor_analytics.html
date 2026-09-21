@@ -41,7 +41,7 @@
 
 <div class="container py-5">
     <a href="{% url 'instructor_dashboard' %}" class="btn"><i class="fa-solid fa-arrow-left me-2"></i>Back to Dashboard</a>
-  <h2 class="mb-4">📊 Revenue Analytics Dashboard</h2>
+  <h2 class="mb-4">Revenue Analytics Dashboard</h2>
 
   <!-- Stats -->
   <div class="row mb-4">
@@ -55,45 +55,54 @@
 
   <!-- Chart -->
   <div class="card p-4 shadow mb-4">
-    <h5>📈 Course Enrollment / Sales</h5>
+    <h5>Course Enrollment / Sales</h5>
     <canvas id="revenueChart"></canvas>
   </div>
 
   <!-- Top Courses -->
   <div class="card p-4 shadow">
-    <h5>🔥 Top Selling Courses</h5>
-    <ul class="list-group mt-3">
-      {% for c in top_courses %}
-        <li class="list-group-item d-flex justify-content-between">
-          {{ c.course__title }}
-          <span class="badge bg-success">{{ c.students }} students</span>
-        </li>
-      {% endfor %}
-    </ul>
+        <h5>Top Selling Courses</h5>
+        <ul class="list-group mt-3">
+            {% for c in top_courses %}
+                <li class="list-group-item d-flex justify-content-between">
+                    {{ c.course_title }}
+                    <span class="badge bg-success">{{ c.students }} students</span>
+                </li>
+            {% empty %}
+                <li class="list-group-item">No data available</li>
+            {% endfor %}
+        </ul>
   </div>
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const ctx = document.getElementById('revenueChart');
-
-new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: {{ chart_labels|safe }},
-        datasets: [{
-            label: 'Students Enrolled',
-            data: {{ chart_values|safe }},
-            backgroundColor: '#4e73df'
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: { display: false }
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    const revenueChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Students',
+                data: {{ chart_values|safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision:0
+                    }
+                }
+            }
         }
-    }
-});
+    });
 </script>
 
 </body>

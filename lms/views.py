@@ -514,6 +514,7 @@ def instructor_dashboard(request):
 
 def sponsor_dashboard(request):
     sponsor = request.user
+    user_profile = request.user.profile
 
     # Get filters
     search = request.GET.get("search")
@@ -562,7 +563,7 @@ def sponsor_dashboard(request):
     fundings = Funding.objects.filter(sponsor=sponsor).select_related("course")
 
     context = {
-        "sponsor_name": sponsor.username,
+        "sponsor_name": user_profile.user.first_name or user_profile.user.username,
         "sponsored_students": sponsored_students,
         "total_students_sponsored": sponsored_students.count(),
         "total_funds_allocated": total_funds,
@@ -2107,28 +2108,31 @@ def instructor_analytics(request):
     instructor = request.user
 
     courses = Course.objects.filter(instructor=instructor)
-
     enrollments = Enrollment.objects.filter(course__in=courses)
 
-    #  Course-wise revenue
+    # Course-wise revenue
     revenue_data = enrollments.values(
         'course__title'
     ).annotate(
         students=Count('student'),
-        revenue=Sum('course__price') 
+        revenue=Sum('course__price')
     )
 
     df = pd.DataFrame(list(revenue_data))
 
-    #  Top selling courses
-    top_courses = df.sort_values(by='students', ascending=False).head(5)
+    # Rename columns for template-friendly keys
+    if not df.empty:
+        df.rename(columns={"course__title": "course_title"}, inplace=True)
 
-    #  Total revenue
+    # Top selling courses
+    top_courses = df.sort_values(by='students', ascending=False).head(5) if not df.empty else pd.DataFrame()
+
+    # Total revenue
     total_revenue = get_total_revenue(courses)
 
-    # Prepare chart data
-    chart_labels = df['course__title'].tolist() if not df.empty else []
-    chart_values = df['students'].tolist() if not df.empty else []
+    # Prepare chart data safely
+    chart_labels = df['course_title'].tolist() if 'course_title' in df else []
+    chart_values = df['students'].tolist() if 'students' in df else []
 
     context = {
         "courses": courses,
