@@ -39,6 +39,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'accounts',
+    'instructor',
+    'students',
+    'sponsors',
     'lms',
     'lms_api',
 

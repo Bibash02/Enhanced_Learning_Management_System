@@ -23,6 +23,11 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('lms/', include('lms.urls')),
+
+    path('lms/accounts/', include('accounts.urls')),
+    path('lms/students/', include('students.urls')),
+    path('lms/instructor/', include('instructor.urls')),
+    path('lms/sponsors/', include('sponsors.urls')),
     path('lms_api/', include('lms_api.urls')),
     path('lms_api/schema', SpectacularAPIView.as_view(), name='schema'),
     path('lms_api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name = 'schema'), name='swagger-ui'),
