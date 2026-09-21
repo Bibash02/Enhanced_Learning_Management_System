@@ -84,7 +84,7 @@ def signup(request):
         messages.success(request, "Account created Successfully.")
         return redirect('signin')
             
-    return render(request, 'signup.html')
+    return render(request, 'accounts/signup.html')
 
 def signin(request):
     if request.method == "POST":
@@ -113,7 +113,7 @@ def signin(request):
         else:
             messages.error(request, "Invalid email or password!")
             return redirect('signin')
-    return render(request, 'signin.html')
+    return render(request, 'accounts/signin.html')
 
 def signout(request):
     logout(request)
