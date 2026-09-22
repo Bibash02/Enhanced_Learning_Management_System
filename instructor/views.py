@@ -43,7 +43,7 @@ def instructor_dashboard(request):
         'recent_assignments': recent_assignments,
         'total_revenue': total_revenue,
     }
-    return render(request, 'instructor_dashboard.html', context)
+    return render(request, 'instructor/instructor_dashboard.html', context)
 
 @login_required
 def assignment_create(request):
@@ -126,7 +126,7 @@ def assignment_create(request):
     else:
         form = AssignmentForm()
 
-    return render(request, 'assignment_create.html', {'form': form})
+    return render(request, 'instructor/assignment_create.html', {'form': form})
 
 def assignment_edit(request, assignment_id):
     pass
@@ -153,7 +153,7 @@ def course_create(request):
     else:
         form = CourseCreateForm()
 
-    return render(request, 'course_create.html', {'form': form})
+    return render(request, 'instructor/course_create.html', {'form': form})
 
 @login_required
 def course_edit(request, course_id):
@@ -172,7 +172,7 @@ def course_edit(request, course_id):
         'form': form,
         'course': course,
     }
-    return render(request, 'course_edit.html', context)
+    return render(request, 'instructor/course_edit.html', context)
 
 def course_delete(request, course_id):
     course = get_object_or_404(Course, id = course_id, instructor = request.user)
@@ -181,7 +181,7 @@ def course_delete(request, course_id):
         course.delete()
         messages.success(request, "Course deleted successfully.")
         return redirect('instructor_dashboard')
-    return render(request, 'course_delete.html', {"course": course})
+    return render(request, 'instructor/course_delete.html', {"course": course})
 
 def course_content(request, course_id):
     course = get_object_or_404(Course, id=course_id, is_published=True)
@@ -198,7 +198,7 @@ def course_content(request, course_id):
             'can_enroll': True,
             'breadcrumb': [{'name': 'Dashboard', 'url': 'student_dashboard'}, {'name': course.title, 'active': True}],
         }
-        return render(request, 'course_detail.html', context)
+        return render(request, 'instructor/course_detail.html', context)
     
     # Fetch lessons (content for learning)
     lessons = course.lessons.select_related().order_by('order')
@@ -252,7 +252,7 @@ def course_content(request, course_id):
         'breadcrumb': [{'name': 'Dashboard', 'url': 'student_dashboard' if not is_instructor else 'instructor_dashboard'}, 
                        {'name': course.title, 'active': True}],
     }
-    return render(request, 'course_detail.html', context)
+    return render(request, 'instructor/course_detail.html', context)
 
 @login_required
 def create_lesson(request, course_id):
@@ -272,7 +272,7 @@ def create_lesson(request, course_id):
     else:
         form = LessonForm(user=request.user, course=course)
 
-    return render(request, 'lesson_create.html', {'form': form, 'course': course})
+    return render(request, 'instructor/lesson_create.html', {'form': form, 'course': course})
 
 def create_module(request, course_id):
     course = get_object_or_404(Course, id = course_id, instructor = request.user)
@@ -288,12 +288,12 @@ def create_module(request, course_id):
     else:
         form = ModuleForm()
 
-    return render(request, 'module_create.html', {'form': form, 'course': course})
+    return render(request, 'instructor/module_create.html', {'form': form, 'course': course})
 
 @login_required
 def instructor_profile(request):
     instructor = request.user
-    return render(request, 'instructor_profile.html', {'instructor': instructor})
+    return render(request, 'instructor/instructor_profile.html', {'instructor': instructor})
 
 def update_instructor_profile(request):
     user = request.user
@@ -329,7 +329,7 @@ def update_instructor_profile(request):
         'password_form': password_form,
         'instructor': user,  # for image preview in template
     }
-    return render(request, 'update_instructor_profile.html', context)
+    return render(request, 'instructor/update_instructor_profile.html', context)
 
 def change_instructor_password(request):
     pass
@@ -390,7 +390,7 @@ def view_assignment(request, assignment_id):
         messages.success(request, "Assignment submitted successfully!")
         return redirect('pending_assignments')
 
-    return render(request, 'view_assignment.html', {
+    return render(request, 'instructor/view_assignment.html', {
         'assignment': assignment,
         'questions': questions,
         'submission_exists': submission_exists,
@@ -405,7 +405,7 @@ def instructor_submissions_list(request):
 
     submissions = Submission.objects.filter(assignment__in=assignments).select_related('student', 'assignment')
 
-    return render(request, 'submitted_answers_list.html', {
+    return render(request, 'instructor/submitted_answers_list.html', {
         'submissions': submissions
     })
 
@@ -453,7 +453,7 @@ def instructor_submission_detail(request, submission_id):
         messages.success(request, "Marks & feedback saved successfully!")
         return redirect('instructor_submitted_answers')
 
-    return render(request, 'submission_detail.html', {
+    return render(request, 'instructor/submission_detail.html', {
         'submission': submission,
         'answers': answers
     })
@@ -497,4 +497,4 @@ def instructor_analytics(request):
         "top_courses": top_courses.to_dict(orient='records'),
     }
 
-    return render(request, "instructor_analytics.html", context)
+    return render(request, "instructor/instructor_analytics.html", context)
