@@ -17,6 +17,7 @@ from .email_service import send_enrollment_email
 from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.pagination import PageNumberPagination
+from drf_spectacular.utils import extend_schema
 import uuid
 import base64
 import json
@@ -64,6 +65,7 @@ class RegisterAPIView(APIView):
 class  LoginAPIView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(request=LoginSerializer)
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
 
