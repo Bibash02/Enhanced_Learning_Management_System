@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from lms.utils import generate_signature
 from lms.views import apply_funding
-from .permissions import IsStudent, IsInstructor, IsSponsor
+from .permissions import IsAdmin, IsStudent, IsInstructor, IsSponsor
 from django.shortcuts import get_object_or_404
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import ListAPIView
@@ -475,7 +475,9 @@ class StudentEnrolledCoursesAPIView(APIView):
     pagination_class = CoursePagination
 
     def get(self, request):
-        enrollment = Enrollment.objects.filter(student=request.user)
+        enrollment = Enrollment.objects.all()
+        if not IsAdmin().has_permission(request, self):
+            enrollment = enrollment.filter(student=request.user)
         serializer = EnrollmentSerializer(enrollment, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -485,7 +487,8 @@ class CourseAssignmentsAPIView(APIView):
 
     def get(self, request, course_id):
         # Check student enrolled
-        is_enrolled = Enrollment.objects.filter(
+        is_admin = IsAdmin().has_permission(request, self)
+        is_enrolled = is_admin or Enrollment.objects.filter(
             student=request.user,
             course_id=course_id
         ).exists()
@@ -629,19 +632,28 @@ class InstructorCoursesAPIView(ListAPIView):
     pagination_class = CoursePagination
 
     def get_queryset(self):
-        return Course.objects.filter(instructor=self.request.user)
+        courses = Course.objects.all()
+        if not IsAdmin().has_permission(self.request, self):
+            courses = courses.filter(instructor=self.request.user)
+        return courses
     
 # Update specific course
 class CourseUpdateAPIView(APIView):
     permission_classes = [IsInstructor]
 
     def get(self, request, course_id):
-        course = get_object_or_404(Course, id=course_id, instructor=request.user)
+        courses = Course.objects.all()
+        if not IsAdmin().has_permission(request, self):
+            courses = courses.filter(instructor=request.user)
+        course = get_object_or_404(courses, id=course_id)
         serializer = CourseSerializer(course)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, course_id):
-        course = get_object_or_404(Course, id=course_id, instructor = request.user)
+        courses = Course.objects.all()
+        if not IsAdmin().has_permission(request, self):
+            courses = courses.filter(instructor=request.user)
+        course = get_object_or_404(courses, id=course_id)
         serializer = CourseSerializer(course, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -649,7 +661,10 @@ class CourseUpdateAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self, request, course_id):
-        course = get_object_or_404(Course, id=course_id, instructor=request.user)
+        courses = Course.objects.all()
+        if not IsAdmin().has_permission(request, self):
+            courses = courses.filter(instructor=request.user)
+        course = get_object_or_404(courses, id=course_id)
         course.delete()
         return Response({"detail": "Course deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
@@ -659,13 +674,16 @@ class AssignmentCreateAPIView(APIView):
 
     def post(self, request, course_id):
         # Check if instructor owns this course
-        course = get_object_or_404(Course, id=course_id, instructor=request.user)
+        courses = Course.objects.all()
+        if not IsAdmin().has_permission(request, self):
+            courses = courses.filter(instructor=request.user)
+        course = get_object_or_404(courses, id=course_id)
 
         serializer = AssignmentSerializer(data=request.data)
         
         if serializer.is_valid():
             # Save assignment with course
-            assignment = serializer.save(course=course)
+            assignment = serializer.save(course=course, created_by=request.user)
 
             # Get all enrolled students
             enrolled_students = Enrollment.objects.filter(course=course)
@@ -677,14 +695,14 @@ class AssignmentCreateAPIView(APIView):
                 f"A new assignment has been added in your course: {course.title}.\n\n"
                 f"Assignment Title: {assignment.title}\n"
                 f"Description: {assignment.description}\n"
-                f"Deadline: {assignment.deadline}\n\n"
+                f"Deadline: {assignment.due_date}\n\n"
                 f"Please log in to your LMS portal and complete it on time.\n\n"
                 f"Best regards,\n"
                 f"LMS Team"
             )
 
             for enroll in enrolled_students:
-                student_user = enroll.student.user
+                student_user = enroll.student
 
                 try:
                     send_mail(
@@ -710,7 +728,10 @@ class AssignmentSubmissionsAPIView(APIView):
     pagination_class = CoursePagination
 
     def get(self, request, assignment_id):
-        assignment = get_object_or_404(Assignment, id=assignment_id, created_by=request.user)
+        assignments = Assignment.objects.all()
+        if not IsAdmin().has_permission(request, self):
+            assignments = assignments.filter(created_by=request.user)
+        assignment = get_object_or_404(assignments, id=assignment_id)
         submissions = Submission.objects.filter(assignment=assignment)
         serializer = SubmissionSerializer(submissions, many=True)
         return Response(serializer.data)
@@ -719,16 +740,18 @@ class GradeSubmissionAPIView(APIView):
     permission_classes = [IsInstructor]
 
     def get(self, request, submission_id):
-        submission = get_object_or_404(Submission, id=submission_id)
+        submissions = Submission.objects.all()
+        if not IsAdmin().has_permission(request, self):
+            submissions = submissions.filter(assignment__created_by=request.user)
+        submission = get_object_or_404(submissions, id=submission_id)
         serializer = SubmissionSerializer(submission)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, submission_id):
-        submission = get_object_or_404(
-            Submission,
-            id=submission_id,
-            assignment__created_by=request.user
-        )
+        submissions = Submission.objects.all()
+        if not IsAdmin().has_permission(request, self):
+            submissions = submissions.filter(assignment__created_by=request.user)
+        submission = get_object_or_404(submissions, id=submission_id)
 
         grade = request.data.get('grade')
         feedback = request.data.get('feedback', '').strip()
@@ -880,9 +903,10 @@ class SponsoredStudentsListAPIView(APIView):
 
     def get(self, request):
         sponsor = request.user
-        student_fundings = Funding.objects.filter(
-            sponsor=sponsor, student__isnull=False
-        ).select_related('student', 'student__user')
+        student_fundings = Funding.objects.filter(student__isnull=False)
+        if not IsAdmin().has_permission(request, self):
+            student_fundings = student_fundings.filter(sponsor=sponsor)
+        student_fundings = student_fundings.select_related('student', 'student__user')
 
         serializer_data = [
             {
@@ -990,9 +1014,10 @@ class SponsoredCoursesListAPIView(APIView):
 
     def get(self, request):
         sponsor = request.user
-        course_fundings = Funding.objects.filter(
-            sponsor=sponsor, course__isnull=False
-        ).select_related('course')
+        course_fundings = Funding.objects.filter(course__isnull=False)
+        if not IsAdmin().has_permission(request, self):
+            course_fundings = course_fundings.filter(sponsor=sponsor)
+        course_fundings = course_fundings.select_related('course')
 
         serializer_data = [
             {
@@ -1014,7 +1039,10 @@ class FundingHistoryAPIView(APIView):
     pagination_class = CoursePagination
 
     def get(self, request):
-        fundings = Funding.objects.filter(sponsor=request.user).order_by('-funded_at')
+        fundings = Funding.objects.all()
+        if not IsAdmin().has_permission(request, self):
+            fundings = fundings.filter(sponsor=request.user)
+        fundings = fundings.order_by('-funded_at')
 
         serializer = FundingHistorySerializer(fundings, many=True)
         return Response(serializer.data)
