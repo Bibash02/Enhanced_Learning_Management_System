@@ -50,7 +50,12 @@ def signup(request):
         )
         user.save()
 
-        UserProfile.objects.create(user = user, role = role, image=image if image else "images/default.jpg")
+        # A post-save signal may create a default student profile first. Update
+        # that profile so the selected role is retained during login.
+        profile_defaults = {"role": role}
+        if image:
+            profile_defaults["image"] = image
+        UserProfile.objects.update_or_create(user=user, defaults=profile_defaults)
 
         # Create sponsor profile if user is sponsor
         if role == "sponsor":
