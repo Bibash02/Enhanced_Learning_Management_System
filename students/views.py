@@ -134,7 +134,7 @@ def course_detail(request, course_id):
         'fundings': fundings,
     }
 
-    return render(request, 'course_detail.html', context)
+    return render(request, 'students/course_detail.html', context)
 
 @login_required
 def enrolled_course(request):
